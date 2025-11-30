@@ -17,7 +17,6 @@
 ---       snapUp = {{"ctrl", "alt"}, "up"},
 ---       snapDown = {{"ctrl", "alt"}, "down"},
 ---   })
----   spoon.WindowSnap:start()
 ---
 --- With fine-grained control (independent axes):
 ---   spoon.WindowSnap:bindHotkeys({
@@ -39,7 +38,7 @@ obj.__index = obj
 -- Metadata
 obj.name = "WindowSnap"
 obj.version = "2.0.0"
-obj.author = "John Googol <johngoogol@gmail.com>"
+obj.author = "Leftium <john@leftium.com>"
 obj.homepage = "https://github.com/leftium/WindowSnap.spoon"
 obj.license = "MIT - https://opensource.org/licenses/MIT"
 
@@ -63,9 +62,6 @@ obj.aerospacePath = "/opt/homebrew/bin/aerospace"
 
 -- Private: Per-window state: widthIndex, heightIndex, lastH, lastV
 obj._windowState = {}
-
--- Private: Hotkey objects for cleanup
-obj._hotkeys = {}
 
 -- Check if AeroSpace is running and focused window is tiled (not floating)
 local function isAerospaceTiled(aerospacePath)
@@ -191,21 +187,6 @@ local windowsStyle = { sizes = { 0.5, 1/3, 2/3 }, independentAxes = false, reset
 -- Fine-grained options: independent axes for corner snapping
 local fineGrained = { sizes = { 0.5, 1/3, 2/3 }, independentAxes = true }
 
---- WindowSnap:init()
---- Method
---- Initialize the spoon. Called automatically by hs.loadSpoon().
----
---- Parameters:
----  * None
----
---- Returns:
----  * The WindowSnap object
-function obj:init()
-    self._windowState = {}
-    self._hotkeys = {}
-    return self
-end
-
 --- WindowSnap:bindHotkeys(mapping)
 --- Method
 --- Bind hotkeys for window snapping using standard Hammerspoon format.
@@ -250,37 +231,6 @@ function obj:bindHotkeys(mapping)
         fineDown = hs.fnutils.partial(self.move, self, "down", fineGrained),
     }
     hs.spoons.bindHotkeysToSpec(spec, mapping)
-    return self
-end
-
---- WindowSnap:start()
---- Method
---- Start WindowSnap (currently a no-op, hotkeys are bound immediately by bindHotkeys).
----
---- Parameters:
----  * None
----
---- Returns:
----  * The WindowSnap object
-function obj:start()
-    -- Hotkeys are enabled when bound via hs.spoons.bindHotkeysToSpec
-    -- This method exists for API convention compliance
-    return self
-end
-
---- WindowSnap:stop()
---- Method
---- Stop WindowSnap and disable all hotkeys.
----
---- Parameters:
----  * None
----
---- Returns:
----  * The WindowSnap object
-function obj:stop()
-    -- hs.spoons.bindHotkeysToSpec uses hs.hotkey.bind which auto-enables
-    -- To stop, we'd need to track hotkeys ourselves. For now, reset state.
-    self:resetState()
     return self
 end
 

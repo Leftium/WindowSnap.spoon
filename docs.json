@@ -1,0 +1,348 @@
+[
+  {
+    "Constant" : [
+
+    ],
+    "submodules" : [
+
+    ],
+    "Function" : [
+
+    ],
+    "Variable" : [
+      {
+        "doc" : "Default size ratios to cycle through. Default: { 0.5, 1\/3, 2\/3 }",
+        "desc" : "Default size ratios to cycle through. Default: { 0.5, 1\/3, 2\/3 }",
+        "def" : "WindowSnap.sizes",
+        "stripped_doc" : [
+          "Default size ratios to cycle through. Default: { 0.5, 1\/3, 2\/3 }"
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap.sizes",
+        "type" : "Variable",
+        "returns" : [
+
+        ],
+        "name" : "sizes",
+        "parameters" : [
+
+        ]
+      },
+      {
+        "doc" : "Default independent axes mode. When true, horizontal and vertical axes are\nindependent (allows corner snapping). When false, Windows-style behavior\nwhere horizontal movement resets height to 100%. Default: true",
+        "desc" : "Default independent axes mode. When true, horizontal and vertical axes are",
+        "def" : "WindowSnap.independentAxes",
+        "stripped_doc" : [
+          "Default independent axes mode. When true, horizontal and vertical axes are",
+          "independent (allows corner snapping). When false, Windows-style behavior",
+          "where horizontal movement resets height to 100%. Default: true"
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap.independentAxes",
+        "type" : "Variable",
+        "returns" : [
+
+        ],
+        "name" : "independentAxes",
+        "parameters" : [
+
+        ]
+      },
+      {
+        "doc" : "Path to aerospace binary. Default: \"\/opt\/homebrew\/bin\/aerospace\"\nSet to nil to disable AeroSpace integration.",
+        "desc" : "Path to aerospace binary. Default: \"\/opt\/homebrew\/bin\/aerospace\"",
+        "def" : "WindowSnap.aerospacePath",
+        "stripped_doc" : [
+          "Path to aerospace binary. Default: \"\/opt\/homebrew\/bin\/aerospace\"",
+          "Set to nil to disable AeroSpace integration."
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap.aerospacePath",
+        "type" : "Variable",
+        "returns" : [
+
+        ],
+        "name" : "aerospacePath",
+        "parameters" : [
+
+        ]
+      }
+    ],
+    "stripped_doc" : [
+
+    ],
+    "Deprecated" : [
+
+    ],
+    "desc" : "Windows Snap-style window management with Raycast-style size cycling.",
+    "type" : "Module",
+    "Constructor" : [
+
+    ],
+    "items" : [
+      {
+        "doc" : "Path to aerospace binary. Default: \"\/opt\/homebrew\/bin\/aerospace\"\nSet to nil to disable AeroSpace integration.",
+        "desc" : "Path to aerospace binary. Default: \"\/opt\/homebrew\/bin\/aerospace\"",
+        "def" : "WindowSnap.aerospacePath",
+        "stripped_doc" : [
+          "Path to aerospace binary. Default: \"\/opt\/homebrew\/bin\/aerospace\"",
+          "Set to nil to disable AeroSpace integration."
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap.aerospacePath",
+        "type" : "Variable",
+        "returns" : [
+
+        ],
+        "name" : "aerospacePath",
+        "parameters" : [
+
+        ]
+      },
+      {
+        "doc" : "Default independent axes mode. When true, horizontal and vertical axes are\nindependent (allows corner snapping). When false, Windows-style behavior\nwhere horizontal movement resets height to 100%. Default: true",
+        "desc" : "Default independent axes mode. When true, horizontal and vertical axes are",
+        "def" : "WindowSnap.independentAxes",
+        "stripped_doc" : [
+          "Default independent axes mode. When true, horizontal and vertical axes are",
+          "independent (allows corner snapping). When false, Windows-style behavior",
+          "where horizontal movement resets height to 100%. Default: true"
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap.independentAxes",
+        "type" : "Variable",
+        "returns" : [
+
+        ],
+        "name" : "independentAxes",
+        "parameters" : [
+
+        ]
+      },
+      {
+        "doc" : "Default size ratios to cycle through. Default: { 0.5, 1\/3, 2\/3 }",
+        "desc" : "Default size ratios to cycle through. Default: { 0.5, 1\/3, 2\/3 }",
+        "def" : "WindowSnap.sizes",
+        "stripped_doc" : [
+          "Default size ratios to cycle through. Default: { 0.5, 1\/3, 2\/3 }"
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap.sizes",
+        "type" : "Variable",
+        "returns" : [
+
+        ],
+        "name" : "sizes",
+        "parameters" : [
+
+        ]
+      },
+      {
+        "doc" : "Bind hotkeys for window snapping using standard Hammerspoon format.\n\nParameters:\n * mapping - A table with action names as keys and hotkey specs as values.\n   Each hotkey spec is a table: {{modifiers}, key}\n   Supported actions:\n     * snapLeft, snapRight, snapUp, snapDown - Windows-style snapping\n     * fineLeft, fineRight, fineUp, fineDown - Fine-grained corner snapping\n\nReturns:\n * The WindowSnap object\n\nNotes:\n * Windows-style (snap*): Resets to 50% when changing direction, height resets to 100% on horizontal\n * Fine-grained (fine*): Axes are independent, keeps size when changing direction\n * If AeroSpace is running and window is tiled, hotkeys do nothing (AeroSpace handles it)\n\nExample:\n ```lua\n spoon.WindowSnap:bindHotkeys({\n     snapLeft = {{\"ctrl\", \"alt\"}, \"left\"},\n     snapRight = {{\"ctrl\", \"alt\"}, \"right\"},\n     snapUp = {{\"ctrl\", \"alt\"}, \"up\"},\n     snapDown = {{\"ctrl\", \"alt\"}, \"down\"},\n     fineLeft = {{\"shift\", \"ctrl\", \"alt\"}, \"left\"},\n     fineRight = {{\"shift\", \"ctrl\", \"alt\"}, \"right\"},\n     fineUp = {{\"shift\", \"ctrl\", \"alt\"}, \"up\"},\n     fineDown = {{\"shift\", \"ctrl\", \"alt\"}, \"down\"},\n })\n ```",
+        "desc" : "Bind hotkeys for window snapping using standard Hammerspoon format.",
+        "def" : "WindowSnap:bindHotkeys(mapping)",
+        "stripped_doc" : [
+          "Bind hotkeys for window snapping using standard Hammerspoon format.",
+          ""
+        ],
+        "notes" : [
+          " * Windows-style (snap*): Resets to 50% when changing direction, height resets to 100% on horizontal",
+          " * Fine-grained (fine*): Axes are independent, keeps size when changing direction",
+          " * If AeroSpace is running and window is tiled, hotkeys do nothing (AeroSpace handles it)",
+          "",
+          "Example:",
+          " ```lua",
+          " spoon.WindowSnap:bindHotkeys({",
+          "     snapLeft = {{\"ctrl\", \"alt\"}, \"left\"},",
+          "     snapRight = {{\"ctrl\", \"alt\"}, \"right\"},",
+          "     snapUp = {{\"ctrl\", \"alt\"}, \"up\"},",
+          "     snapDown = {{\"ctrl\", \"alt\"}, \"down\"},",
+          "     fineLeft = {{\"shift\", \"ctrl\", \"alt\"}, \"left\"},",
+          "     fineRight = {{\"shift\", \"ctrl\", \"alt\"}, \"right\"},",
+          "     fineUp = {{\"shift\", \"ctrl\", \"alt\"}, \"up\"},",
+          "     fineDown = {{\"shift\", \"ctrl\", \"alt\"}, \"down\"},",
+          " })",
+          " ```"
+        ],
+        "signature" : "WindowSnap:bindHotkeys(mapping)",
+        "type" : "Method",
+        "returns" : [
+          " * The WindowSnap object",
+          ""
+        ],
+        "name" : "bindHotkeys",
+        "parameters" : [
+          " * mapping - A table with action names as keys and hotkey specs as values.",
+          "   Each hotkey spec is a table: {{modifiers}, key}",
+          "   Supported actions:",
+          "     * snapLeft, snapRight, snapUp, snapDown - Windows-style snapping",
+          "     * fineLeft, fineRight, fineUp, fineDown - Fine-grained corner snapping",
+          ""
+        ]
+      },
+      {
+        "doc" : "Move\/snap the focused window in the given direction.\nRepeating the same direction cycles through sizes.\n\nParameters:\n * direction - \"left\", \"right\", \"up\", or \"down\"\n * options - optional table with:\n   * sizes - array of size ratios to cycle through (default: WindowSnap.sizes)\n   * independentAxes - boolean, true for corner snapping (default: WindowSnap.independentAxes)\n   * resetOnDirectionChange - boolean, reset to first size when changing direction (default: false)\n\nReturns:\n * None",
+        "desc" : "Move\/snap the focused window in the given direction.",
+        "def" : "WindowSnap:move(direction, options)",
+        "stripped_doc" : [
+          "Move\/snap the focused window in the given direction.",
+          "Repeating the same direction cycles through sizes.",
+          ""
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap:move(direction, options)",
+        "type" : "Method",
+        "returns" : [
+          " * None"
+        ],
+        "name" : "move",
+        "parameters" : [
+          " * direction - \"left\", \"right\", \"up\", or \"down\"",
+          " * options - optional table with:",
+          "   * sizes - array of size ratios to cycle through (default: WindowSnap.sizes)",
+          "   * independentAxes - boolean, true for corner snapping (default: WindowSnap.independentAxes)",
+          "   * resetOnDirectionChange - boolean, reset to first size when changing direction (default: false)",
+          ""
+        ]
+      },
+      {
+        "doc" : "Reset the cycling state for a specific window (or all windows if nil).\n\nParameters:\n * winId - window ID to reset, or nil to reset all\n\nReturns:\n * The WindowSnap object",
+        "desc" : "Reset the cycling state for a specific window (or all windows if nil).",
+        "def" : "WindowSnap:resetState(winId)",
+        "stripped_doc" : [
+          "Reset the cycling state for a specific window (or all windows if nil).",
+          ""
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap:resetState(winId)",
+        "type" : "Method",
+        "returns" : [
+          " * The WindowSnap object"
+        ],
+        "name" : "resetState",
+        "parameters" : [
+          " * winId - window ID to reset, or nil to reset all",
+          ""
+        ]
+      }
+    ],
+    "Method" : [
+      {
+        "doc" : "Move\/snap the focused window in the given direction.\nRepeating the same direction cycles through sizes.\n\nParameters:\n * direction - \"left\", \"right\", \"up\", or \"down\"\n * options - optional table with:\n   * sizes - array of size ratios to cycle through (default: WindowSnap.sizes)\n   * independentAxes - boolean, true for corner snapping (default: WindowSnap.independentAxes)\n   * resetOnDirectionChange - boolean, reset to first size when changing direction (default: false)\n\nReturns:\n * None",
+        "desc" : "Move\/snap the focused window in the given direction.",
+        "def" : "WindowSnap:move(direction, options)",
+        "stripped_doc" : [
+          "Move\/snap the focused window in the given direction.",
+          "Repeating the same direction cycles through sizes.",
+          ""
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap:move(direction, options)",
+        "type" : "Method",
+        "returns" : [
+          " * None"
+        ],
+        "name" : "move",
+        "parameters" : [
+          " * direction - \"left\", \"right\", \"up\", or \"down\"",
+          " * options - optional table with:",
+          "   * sizes - array of size ratios to cycle through (default: WindowSnap.sizes)",
+          "   * independentAxes - boolean, true for corner snapping (default: WindowSnap.independentAxes)",
+          "   * resetOnDirectionChange - boolean, reset to first size when changing direction (default: false)",
+          ""
+        ]
+      },
+      {
+        "doc" : "Reset the cycling state for a specific window (or all windows if nil).\n\nParameters:\n * winId - window ID to reset, or nil to reset all\n\nReturns:\n * The WindowSnap object",
+        "desc" : "Reset the cycling state for a specific window (or all windows if nil).",
+        "def" : "WindowSnap:resetState(winId)",
+        "stripped_doc" : [
+          "Reset the cycling state for a specific window (or all windows if nil).",
+          ""
+        ],
+        "notes" : [
+
+        ],
+        "signature" : "WindowSnap:resetState(winId)",
+        "type" : "Method",
+        "returns" : [
+          " * The WindowSnap object"
+        ],
+        "name" : "resetState",
+        "parameters" : [
+          " * winId - window ID to reset, or nil to reset all",
+          ""
+        ]
+      },
+      {
+        "doc" : "Bind hotkeys for window snapping using standard Hammerspoon format.\n\nParameters:\n * mapping - A table with action names as keys and hotkey specs as values.\n   Each hotkey spec is a table: {{modifiers}, key}\n   Supported actions:\n     * snapLeft, snapRight, snapUp, snapDown - Windows-style snapping\n     * fineLeft, fineRight, fineUp, fineDown - Fine-grained corner snapping\n\nReturns:\n * The WindowSnap object\n\nNotes:\n * Windows-style (snap*): Resets to 50% when changing direction, height resets to 100% on horizontal\n * Fine-grained (fine*): Axes are independent, keeps size when changing direction\n * If AeroSpace is running and window is tiled, hotkeys do nothing (AeroSpace handles it)\n\nExample:\n ```lua\n spoon.WindowSnap:bindHotkeys({\n     snapLeft = {{\"ctrl\", \"alt\"}, \"left\"},\n     snapRight = {{\"ctrl\", \"alt\"}, \"right\"},\n     snapUp = {{\"ctrl\", \"alt\"}, \"up\"},\n     snapDown = {{\"ctrl\", \"alt\"}, \"down\"},\n     fineLeft = {{\"shift\", \"ctrl\", \"alt\"}, \"left\"},\n     fineRight = {{\"shift\", \"ctrl\", \"alt\"}, \"right\"},\n     fineUp = {{\"shift\", \"ctrl\", \"alt\"}, \"up\"},\n     fineDown = {{\"shift\", \"ctrl\", \"alt\"}, \"down\"},\n })\n ```",
+        "desc" : "Bind hotkeys for window snapping using standard Hammerspoon format.",
+        "def" : "WindowSnap:bindHotkeys(mapping)",
+        "stripped_doc" : [
+          "Bind hotkeys for window snapping using standard Hammerspoon format.",
+          ""
+        ],
+        "notes" : [
+          " * Windows-style (snap*): Resets to 50% when changing direction, height resets to 100% on horizontal",
+          " * Fine-grained (fine*): Axes are independent, keeps size when changing direction",
+          " * If AeroSpace is running and window is tiled, hotkeys do nothing (AeroSpace handles it)",
+          "",
+          "Example:",
+          " ```lua",
+          " spoon.WindowSnap:bindHotkeys({",
+          "     snapLeft = {{\"ctrl\", \"alt\"}, \"left\"},",
+          "     snapRight = {{\"ctrl\", \"alt\"}, \"right\"},",
+          "     snapUp = {{\"ctrl\", \"alt\"}, \"up\"},",
+          "     snapDown = {{\"ctrl\", \"alt\"}, \"down\"},",
+          "     fineLeft = {{\"shift\", \"ctrl\", \"alt\"}, \"left\"},",
+          "     fineRight = {{\"shift\", \"ctrl\", \"alt\"}, \"right\"},",
+          "     fineUp = {{\"shift\", \"ctrl\", \"alt\"}, \"up\"},",
+          "     fineDown = {{\"shift\", \"ctrl\", \"alt\"}, \"down\"},",
+          " })",
+          " ```"
+        ],
+        "signature" : "WindowSnap:bindHotkeys(mapping)",
+        "type" : "Method",
+        "returns" : [
+          " * The WindowSnap object",
+          ""
+        ],
+        "name" : "bindHotkeys",
+        "parameters" : [
+          " * mapping - A table with action names as keys and hotkey specs as values.",
+          "   Each hotkey spec is a table: {{modifiers}, key}",
+          "   Supported actions:",
+          "     * snapLeft, snapRight, snapUp, snapDown - Windows-style snapping",
+          "     * fineLeft, fineRight, fineUp, fineDown - Fine-grained corner snapping",
+          ""
+        ]
+      }
+    ],
+    "Command" : [
+
+    ],
+    "doc" : "Windows Snap-style window management with Raycast-style size cycling.\nSnaps windows to screen edges\/corners with configurable size cycling.\n\nFeatures:\n * Two modes: Windows-style (half-screen) and fine-grained (corner snapping)\n * Cycles through sizes (1\/2, 1\/3, 2\/3) when pressing same direction repeatedly\n * AeroSpace integration: ignores tiled windows (lets AeroSpace handle them)\n * Works standalone without AeroSpace\n\nQuick start:\n  hs.loadSpoon(\"WindowSnap\")\n  spoon.WindowSnap:bindHotkeys({\n      snapLeft = {{\"ctrl\", \"alt\"}, \"left\"},\n      snapRight = {{\"ctrl\", \"alt\"}, \"right\"},\n      snapUp = {{\"ctrl\", \"alt\"}, \"up\"},\n      snapDown = {{\"ctrl\", \"alt\"}, \"down\"},\n  })\n\nWith fine-grained control (independent axes):\n  spoon.WindowSnap:bindHotkeys({\n      fineLeft = {{\"shift\", \"ctrl\", \"alt\"}, \"left\"},\n      fineRight = {{\"shift\", \"ctrl\", \"alt\"}, \"right\"},\n      fineUp = {{\"shift\", \"ctrl\", \"alt\"}, \"up\"},\n      fineDown = {{\"shift\", \"ctrl\", \"alt\"}, \"down\"},\n  })\n\nManual usage:\n  spoon.WindowSnap:move(\"left\")\n  spoon.WindowSnap:move(\"left\", { sizes = { 0.5, 1 }, independentAxes = false })\n\nDownload: https:\/\/github.com\/leftium\/WindowSnap.spoon",
+    "Field" : [
+
+    ],
+    "name" : "WindowSnap"
+  }
+]

@@ -35,7 +35,6 @@ spoon.WindowSnap:bindHotkeys({
     snapUp = {{"ctrl", "alt"}, "up"},
     snapDown = {{"ctrl", "alt"}, "down"},
 })
-spoon.WindowSnap:start()
 ```
 
 ### With Fine-Grained Control
@@ -53,22 +52,6 @@ spoon.WindowSnap:bindHotkeys({
     fineRight = {{"shift", "ctrl", "alt"}, "right"},
     fineUp = {{"shift", "ctrl", "alt"}, "up"},
     fineDown = {{"shift", "ctrl", "alt"}, "down"},
-})
-spoon.WindowSnap:start()
-```
-
-### With SpoonInstall
-
-```lua
-hs.loadSpoon("SpoonInstall")
-spoon.SpoonInstall:andUse("WindowSnap", {
-    hotkeys = {
-        snapLeft = {{"ctrl", "alt"}, "left"},
-        snapRight = {{"ctrl", "alt"}, "right"},
-        snapUp = {{"ctrl", "alt"}, "up"},
-        snapDown = {{"ctrl", "alt"}, "down"},
-    },
-    start = true,
 })
 ```
 
@@ -148,9 +131,6 @@ spoon.WindowSnap.aerospacePath = "/usr/local/bin/aerospace"
 
 | Method | Description |
 |--------|-------------|
-| `init()` | Initialize the spoon (called automatically by hs.loadSpoon) |
-| `start()` | Start the spoon |
-| `stop()` | Stop the spoon and reset state |
 | `bindHotkeys(mapping)` | Bind hotkeys using standard Spoon format |
 | `move(direction, options)` | Move window in direction with optional settings |
 | `resetState(winId)` | Reset cycling state for window (or all if nil) |
@@ -168,4 +148,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Author
 
-John Googol <johngoogol@gmail.com>
+Leftium <john@leftium.com>
