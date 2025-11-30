@@ -66,19 +66,19 @@ obj._windowState = {}
 -- Check if AeroSpace is running and focused window is tiled (not floating)
 local function isAerospaceTiled(aerospacePath)
     if not aerospacePath then return false end
-    
+
     -- Check if aerospace is running
     if not hs.application.find("AeroSpace") then
         return false
     end
-    
+
     -- Get aerospace's focused window ID
     local aeroWinId, status = hs.execute(aerospacePath .. " list-windows --focused --format '%{window-id}' 2>/dev/null")
     if not status or aeroWinId:gsub("%s+", "") == "" then
         return false  -- aerospace not responding or no focused window
     end
     aeroWinId = aeroWinId:gsub("%s+", "")
-    
+
     -- Check if window is tiled (treeNodeParent contains "TilingContainer" for tiled windows)
     local output = hs.execute(aerospacePath .. " debug-windows --window-id " .. aeroWinId .. " 2>/dev/null")
     local isTiled = output:find("TilingContainer", 1, true) ~= nil
@@ -102,27 +102,27 @@ end
 function obj:move(direction, options)
     local win = hs.window.focusedWindow()
     if not win then return end
-    
+
     -- Skip if AeroSpace is managing this window (tiled)
     if isAerospaceTiled(self.aerospacePath) then return end
-    
+
     local winId = win:id()
-    
+
     options = options or {}
     local sizes = options.sizes or self.sizes
     local independentAxes = options.independentAxes
     if independentAxes == nil then independentAxes = self.independentAxes end
     local resetOnDirectionChange = options.resetOnDirectionChange or false
-    
+
     local screen = win:screen():frame()
     local isHorizontal = (direction == "left" or direction == "right")
-    
+
     -- Initialize state for this window
     if not self._windowState[winId] then
         self._windowState[winId] = { widthIndex = 0, heightIndex = 0, lastH = "left", lastV = "up" }
     end
     local state = self._windowState[winId]
-    
+
     -- Cycle size only if same direction, otherwise just move (or reset if option set)
     if isHorizontal then
         if direction == state.lastH then
@@ -148,18 +148,18 @@ function obj:move(direction, options)
         state.lastV = direction
         -- Windows-style: vertical does NOT reset horizontal (allows corners)
     end
-    
+
     -- Get sizes (default to full screen if axis not yet set)
     local widthRatio = state.widthIndex > 0 and sizes[state.widthIndex] or 1
     local heightRatio = state.heightIndex > 0 and sizes[state.heightIndex] or 1
-    
+
     local f = {
         w = screen.w * widthRatio,
         h = screen.h * heightRatio,
     }
     f.x = screen.x + (state.lastH == "right" and (screen.w - f.w) or 0)
     f.y = screen.y + (state.lastV == "down" and (screen.h - f.h) or 0)
-    
+
     win:setFrame(f, 0)
 end
 
