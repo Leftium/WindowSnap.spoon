@@ -1,15 +1,13 @@
 # WindowSnap.spoon
 
-Windows Snap-style window management for [Hammerspoon](https://www.hammerspoon.org/) with Raycast-style size cycling.
+Windows Snap-style window management for [Hammerspoon](https://www.hammerspoon.org/) with size cycling.
 
 ## Features
 
-- **Windows-style snapping**: Snap windows to left/right half, cycle through sizes (1/2, 1/3, 2/3)
-- **Fine-grained control**: Independent horizontal/vertical axes for precise corner positioning
-- **Size cycling**: Press the same direction repeatedly to cycle through sizes
-- **AeroSpace integration**: Automatically detects floating vs tiled windows, ignores tiled windows (lets AeroSpace handle them)
-- **Works standalone**: No dependencies required (AeroSpace integration is optional)
-- **Standard Spoon API**: Follows Hammerspoon Spoon conventions
+- **Edge snapping**: Snap windows to screen edges, cycle through sizes (1/2, 1/3, 2/3)
+- **Shift modifier**: Hold Shift to prevent height reset (when snapping to the opposite side, height resets to 100% for left↔right, to 50% for up↔down)
+- **AeroSpace integration**: Automatically detects floating vs tiled windows, ignores tiled windows
+- **Simple API**: Just 4 hotkeys (left/right/up/down), Shift variants auto-bound
 
 ## Installation
 
@@ -30,73 +28,34 @@ Download the [latest release](https://github.com/leftium/WindowSnap.spoon/releas
 ```lua
 hs.loadSpoon("WindowSnap")
 spoon.WindowSnap:bindHotkeys({
-    snapLeft = {{"ctrl", "alt"}, "left"},
-    snapRight = {{"ctrl", "alt"}, "right"},
-    snapUp = {{"ctrl", "alt"}, "up"},
-    snapDown = {{"ctrl", "alt"}, "down"},
+    left  = {{"ctrl", "alt"}, "left"},
+    right = {{"ctrl", "alt"}, "right"},
+    up    = {{"ctrl", "alt"}, "up"},
+    down  = {{"ctrl", "alt"}, "down"},
 })
 ```
 
-### With Fine-Grained Control
-
-```lua
-hs.loadSpoon("WindowSnap")
-spoon.WindowSnap:bindHotkeys({
-    -- Windows-style snapping
-    snapLeft = {{"ctrl", "alt"}, "left"},
-    snapRight = {{"ctrl", "alt"}, "right"},
-    snapUp = {{"ctrl", "alt"}, "up"},
-    snapDown = {{"ctrl", "alt"}, "down"},
-    -- Fine-grained corner snapping
-    fineLeft = {{"shift", "ctrl", "alt"}, "left"},
-    fineRight = {{"shift", "ctrl", "alt"}, "right"},
-    fineUp = {{"shift", "ctrl", "alt"}, "up"},
-    fineDown = {{"shift", "ctrl", "alt"}, "down"},
-})
-```
+**Usage:**
+- Press hotkey to snap to edge and cycle sizes (1/2 → 1/3 → 2/3)
+- Hold **Shift** to prevent height reset. When snapping to the opposite side, height resets (to 100% for left↔right, to 50% for up↔down).
 
 ### Vim-Style Keys
 
 ```lua
 spoon.WindowSnap:bindHotkeys({
-    snapLeft = {{"ctrl", "alt"}, "h"},
-    snapRight = {{"ctrl", "alt"}, "l"},
-    snapUp = {{"ctrl", "alt"}, "k"},
-    snapDown = {{"ctrl", "alt"}, "j"},
+    left  = {{"ctrl", "alt"}, "h"},
+    right = {{"ctrl", "alt"}, "l"},
+    up    = {{"ctrl", "alt"}, "k"},
+    down  = {{"ctrl", "alt"}, "j"},
 })
 ```
 
 ### Manual Control
 
 ```lua
--- Basic usage
-spoon.WindowSnap:move("left")
-spoon.WindowSnap:move("right")
-
--- With options
-spoon.WindowSnap:move("left", {
-    sizes = { 0.5, 0.25, 0.75 },
-    independentAxes = false,
-    resetOnDirectionChange = true
-})
+spoon.WindowSnap:move("left")   -- Snap left
+spoon.WindowSnap:move("right")  -- Snap right
 ```
-
-## Modes
-
-### Windows-style (snap*)
-
-Mimics Windows 10/11 Snap behavior:
-- Snaps to half screen, cycles through 1/2 → 1/3 → 2/3
-- Changing horizontal direction resets to 50% width
-- Height resets to 100% on horizontal move
-- Press up/down after left/right for corner positioning
-
-### Fine-grained (fine*)
-
-For precise corner positioning:
-- Horizontal and vertical axes are independent
-- Size is preserved when changing direction
-- Allows arbitrary combinations like 1/3 wide × 2/3 tall
 
 ## AeroSpace Integration
 
@@ -124,23 +83,21 @@ spoon.WindowSnap.aerospacePath = "/usr/local/bin/aerospace"
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `sizes` | `{0.5, 1/3, 2/3}` | Size ratios to cycle through |
-| `independentAxes` | `true` | Whether axes are independent (corner snapping) |
 | `aerospacePath` | `"/opt/homebrew/bin/aerospace"` | Path to aerospace binary, or nil to disable |
 
 ### Methods
 
 | Method | Description |
 |--------|-------------|
-| `bindHotkeys(mapping)` | Bind hotkeys using standard Spoon format |
-| `move(direction, options)` | Move window in direction with optional settings |
+| `bindHotkeys(mapping)` | Bind hotkeys for left/right/up/down (auto-binds Shift variants) |
+| `move(direction)` | Snap window in direction (detects Shift to prevent height reset) |
 | `resetState(winId)` | Reset cycling state for window (or all if nil) |
 
 ### Hotkey Actions
 
 | Action | Description |
 |--------|-------------|
-| `snapLeft`, `snapRight`, `snapUp`, `snapDown` | Windows-style snapping |
-| `fineLeft`, `fineRight`, `fineUp`, `fineDown` | Fine-grained corner snapping |
+| `left`, `right`, `up`, `down` | Snap to edge (hold Shift to prevent height reset) |
 
 ## License
 
