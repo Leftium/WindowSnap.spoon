@@ -7,8 +7,9 @@ Windows Snap-style window management for [Hammerspoon](https://www.hammerspoon.o
 - **Windows-style snapping**: Snap windows to left/right half, cycle through sizes (1/2, 1/3, 2/3)
 - **Fine-grained control**: Independent horizontal/vertical axes for precise corner positioning
 - **Size cycling**: Press the same direction repeatedly to cycle through sizes
-- **AeroSpace integration**: Automatically detects floating vs tiled windows, passes tiled windows through to AeroSpace
+- **AeroSpace integration**: Automatically detects floating vs tiled windows, ignores tiled windows (lets AeroSpace handle them)
 - **Works standalone**: No dependencies required (AeroSpace integration is optional)
+- **Standard Spoon API**: Follows Hammerspoon Spoon conventions
 
 ## Installation
 
@@ -28,28 +29,57 @@ Download the [latest release](https://github.com/leftium/WindowSnap.spoon/releas
 
 ```lua
 hs.loadSpoon("WindowSnap")
-spoon.WindowSnap:bindHotkeys()
+spoon.WindowSnap:bindHotkeys({
+    snapLeft = {{"ctrl", "alt"}, "left"},
+    snapRight = {{"ctrl", "alt"}, "right"},
+    snapUp = {{"ctrl", "alt"}, "up"},
+    snapDown = {{"ctrl", "alt"}, "down"},
+})
+spoon.WindowSnap:start()
 ```
 
-Default hotkeys:
-- `Ctrl+Alt+Arrow` - Windows-style snapping (resets to 50% on direction change)
-- `Shift+Ctrl+Alt+Arrow` - Fine-grained control (independent axes)
-
-### Custom Modifiers
+### With Fine-Grained Control
 
 ```lua
 hs.loadSpoon("WindowSnap")
 spoon.WindowSnap:bindHotkeys({
-    windowsMod = {"ctrl", "alt", "cmd"},           -- Mega modifier
-    fineMod = {"shift", "ctrl", "alt", "cmd"},     -- Giga modifier
+    -- Windows-style snapping
+    snapLeft = {{"ctrl", "alt"}, "left"},
+    snapRight = {{"ctrl", "alt"}, "right"},
+    snapUp = {{"ctrl", "alt"}, "up"},
+    snapDown = {{"ctrl", "alt"}, "down"},
+    -- Fine-grained corner snapping
+    fineLeft = {{"shift", "ctrl", "alt"}, "left"},
+    fineRight = {{"shift", "ctrl", "alt"}, "right"},
+    fineUp = {{"shift", "ctrl", "alt"}, "up"},
+    fineDown = {{"shift", "ctrl", "alt"}, "down"},
+})
+spoon.WindowSnap:start()
+```
+
+### With SpoonInstall
+
+```lua
+hs.loadSpoon("SpoonInstall")
+spoon.SpoonInstall:andUse("WindowSnap", {
+    hotkeys = {
+        snapLeft = {{"ctrl", "alt"}, "left"},
+        snapRight = {{"ctrl", "alt"}, "right"},
+        snapUp = {{"ctrl", "alt"}, "up"},
+        snapDown = {{"ctrl", "alt"}, "down"},
+    },
+    start = true,
 })
 ```
 
-### Custom Keys
+### Vim-Style Keys
 
 ```lua
 spoon.WindowSnap:bindHotkeys({
-    left = "h", right = "l", up = "k", down = "j"
+    snapLeft = {{"ctrl", "alt"}, "h"},
+    snapRight = {{"ctrl", "alt"}, "l"},
+    snapUp = {{"ctrl", "alt"}, "k"},
+    snapDown = {{"ctrl", "alt"}, "j"},
 })
 ```
 
@@ -70,7 +100,7 @@ spoon.WindowSnap:move("left", {
 
 ## Modes
 
-### Windows-style (default modifier)
+### Windows-style (snap*)
 
 Mimics Windows 10/11 Snap behavior:
 - Snaps to half screen, cycles through 1/2 → 1/3 → 2/3
@@ -78,7 +108,7 @@ Mimics Windows 10/11 Snap behavior:
 - Height resets to 100% on horizontal move
 - Press up/down after left/right for corner positioning
 
-### Fine-grained (shift + default modifier)
+### Fine-grained (fine*)
 
 For precise corner positioning:
 - Horizontal and vertical axes are independent
@@ -90,7 +120,7 @@ For precise corner positioning:
 WindowSnap automatically detects if [AeroSpace](https://github.com/nikitabobko/AeroSpace) is running:
 
 - **Floating windows**: WindowSnap handles directly
-- **Tiled windows**: Key events pass through to AeroSpace
+- **Tiled windows**: WindowSnap does nothing (lets AeroSpace handle via its own bindings)
 
 To disable AeroSpace integration:
 
@@ -118,11 +148,19 @@ spoon.WindowSnap.aerospacePath = "/usr/local/bin/aerospace"
 
 | Method | Description |
 |--------|-------------|
-| `bindHotkeys(mapping)` | Bind hotkeys with optional custom keys/modifiers |
+| `init()` | Initialize the spoon (called automatically by hs.loadSpoon) |
+| `start()` | Start the spoon |
+| `stop()` | Stop the spoon and reset state |
+| `bindHotkeys(mapping)` | Bind hotkeys using standard Spoon format |
 | `move(direction, options)` | Move window in direction with optional settings |
-| `toggle(direction)` | Toggle between 100% and current size |
 | `resetState(winId)` | Reset cycling state for window (or all if nil) |
-| `stop()` | Stop the eventtap (unbind hotkeys) |
+
+### Hotkey Actions
+
+| Action | Description |
+|--------|-------------|
+| `snapLeft`, `snapRight`, `snapUp`, `snapDown` | Windows-style snapping |
+| `fineLeft`, `fineRight`, `fineUp`, `fineDown` | Fine-grained corner snapping |
 
 ## License
 
