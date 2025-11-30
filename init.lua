@@ -146,28 +146,39 @@ function obj:move(direction)
         win:setFrame(f, 0)
     else
         local slotHeight = screen.h * heightRatio
-        local maxSlot = math.floor(1 / heightRatio + 0.5) - 1
+        -- Only allow multiple slots for sizes that tile evenly (1/n where n is integer)
+        local tilesEvenly = math.abs(heightRatio - 1/math.floor(1/heightRatio + 0.5)) < 0.01
+        local maxSlot = tilesEvenly and (math.floor(1 / heightRatio + 0.5) - 1) or 0
         local currentSlot = math.floor((currentFrame.y - screen.y) / slotHeight + 0.5)
         currentSlot = math.max(0, math.min(maxSlot, currentSlot))  -- clamp
 
+        -- For non-tiling sizes, detect actual edge position
+        local atTopEdge = currentFrame.y <= screen.y + 10
+        local atBottomEdge = currentFrame.y + currentFrame.h >= screen.y + screen.h - 10
+
         if direction == "up" then
-            if currentSlot > 0 then
+            if tilesEvenly and currentSlot > 0 then
                 currentSlot = currentSlot - 1
-            else
+            elseif atTopEdge then
                 -- At top edge: cycle height
                 state.heightIndex = (state.heightIndex % #sizes) + 1
                 heightRatio = sizes[state.heightIndex]
                 currentSlot = 0
+            else
+                -- Move to top edge
+                currentSlot = 0
             end
         else -- down
-            if currentSlot < maxSlot then
+            if tilesEvenly and currentSlot < maxSlot then
                 currentSlot = currentSlot + 1
-            else
-                -- At bottom edge: cycle height
+            elseif atBottomEdge then
+                -- At bottom edge: cycle height, stay at bottom
                 state.heightIndex = (state.heightIndex % #sizes) + 1
                 heightRatio = sizes[state.heightIndex]
-                local newMaxSlot = math.floor(1 / heightRatio + 0.5) - 1
-                currentSlot = newMaxSlot
+                currentSlot = -1  -- flag: bottom edge
+            else
+                -- Move to bottom edge
+                currentSlot = -1
             end
         end
 
@@ -176,7 +187,9 @@ function obj:move(direction)
             w = currentFrame.w,
             h = screen.h * heightRatio,
             x = currentFrame.x,
-            y = screen.y + currentSlot * screen.h * heightRatio,
+            y = currentSlot == -1
+                and (screen.y + screen.h - screen.h * heightRatio)
+                or (screen.y + currentSlot * screen.h * heightRatio),
         }
         win:setFrame(f, 0)
     end
