@@ -4,8 +4,10 @@ Windows Snap-style window management for [Hammerspoon](https://www.hammerspoon.o
 
 ## Features
 
-- **Edge snapping**: Snap windows to screen edges, cycle through sizes (1/2, 1/3, 2/3)
-- **Shift modifier**: Hold Shift to prevent height reset (when snapping to the opposite side, height resets to 100% for left↔right, to 50% for up↔down)
+- **Slot-based movement**: Left/right moves between slots, cycles width at edges
+- **Size cycling**: Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges
+- **Height behavior**: Left/right resets height to 100%; up/down preserves width
+- **Shift modifier**: Hold Shift to preserve height on left/right
 - **AeroSpace integration**: Automatically detects floating vs tiled windows, ignores tiled windows
 - **Simple API**: Just 4 hotkeys (left/right/up/down), Shift variants auto-bound
 
@@ -36,8 +38,9 @@ spoon.WindowSnap:bindHotkeys({
 ```
 
 **Usage:**
-- Press hotkey to snap to edge and cycle sizes (1/2 → 1/3 → 2/3)
-- Hold **Shift** to prevent height reset. When snapping to the opposite side, height resets (to 100% for left↔right, to 50% for up↔down).
+- **Left/Right**: Move between slots (left/middle/right for 1/3 width), cycle width at edges, reset height to 100%
+- **Up/Down**: Move between slots, cycle height at edges, preserve width
+- Hold **Shift** to preserve height on left/right movement
 
 ### Vim-Style Keys
 
@@ -90,14 +93,15 @@ spoon.WindowSnap.aerospacePath = "/usr/local/bin/aerospace"
 | Method | Description |
 |--------|-------------|
 | `bindHotkeys(mapping)` | Bind hotkeys for left/right/up/down (auto-binds Shift variants) |
-| `move(direction)` | Snap window in direction (detects Shift to prevent height reset) |
+| `move(direction)` | Move window between slots, cycle size at edges |
 | `resetState(winId)` | Reset cycling state for window (or all if nil) |
 
 ### Hotkey Actions
 
 | Action | Description |
 |--------|-------------|
-| `left`, `right`, `up`, `down` | Snap to edge (hold Shift to prevent height reset) |
+| `left`, `right` | Move between slots, cycle width at edge, reset height (Shift preserves) |
+| `up`, `down` | Move between slots, cycle height at edge, preserve width |
 
 ## License
 

@@ -4,9 +4,10 @@
 --- Snaps windows to screen edges with configurable size cycling.
 ---
 --- Features:
----  * Snap to edges, cycle through sizes (1/2, 1/3, 2/3) on repeat
----  * Hold Shift to prevent height reset (when snapping to the opposite side,
----    height resets to 100% for left↔right, to 50% for up↔down)
+---  * Left/right moves between slots, cycles width at edges (resets height to 100%)
+---  * Up/down moves between slots, cycles height at edges (preserves width)
+---  * Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges
+---  * Hold Shift to preserve height on left/right
 ---  * AeroSpace integration: ignores tiled windows
 ---
 --- Quick start:
@@ -59,10 +60,9 @@ end
 
 --- WindowSnap:move(direction)
 --- Method
---- Snap the focused window in the given direction.
---- Repeating the same direction cycles through sizes.
---- Hold Shift to prevent height reset. When snapping to the opposite side,
---- height resets (to 100% for left↔right, to 50% for up↔down).
+--- Move window in the given direction between slots; cycle size at edges.
+--- Left/right resets height to 100% (hold Shift to preserve).
+--- Up/down preserves width.
 ---
 --- Parameters:
 ---  * direction - "left", "right", "up", or "down"
@@ -78,46 +78,108 @@ function obj:move(direction)
     local sizes = self.sizes
     local preserveSize = hs.eventtap.checkKeyboardModifiers().shift
     local screen = win:screen():frame()
+    local currentFrame = win:frame()
     local isHorizontal = (direction == "left" or direction == "right")
 
-    -- Initialize state for this window
+    -- Initialize state for this window (only tracks size indices now)
     if not self._windowState[winId] then
-        self._windowState[winId] = { widthIndex = 0, heightIndex = 0, lastH = "left", lastV = "up" }
+        self._windowState[winId] = { widthIndex = 1, heightIndex = 0 }
     end
     local state = self._windowState[winId]
 
-    -- Update state based on direction
-    if isHorizontal then
-        if direction == state.lastH then
-            state.widthIndex = (state.widthIndex % #sizes) + 1
-        elseif state.widthIndex == 0 then
-            state.widthIndex = 1
-        end
-        state.lastH = direction
-        if not preserveSize then
-            state.heightIndex = 0
-        end
-    else
-        if direction == state.lastV then
-            state.heightIndex = (state.heightIndex % #sizes) + 1
-        elseif state.heightIndex == 0 then
-            state.heightIndex = 1
-        end
-        state.lastV = direction
-    end
-
-    -- Calculate frame
+    -- Get current size ratios
     local widthRatio = state.widthIndex > 0 and sizes[state.widthIndex] or 1
     local heightRatio = state.heightIndex > 0 and sizes[state.heightIndex] or 1
 
-    local f = {
-        w = screen.w * widthRatio,
-        h = screen.h * heightRatio,
-        x = screen.x + (state.lastH == "right" and (screen.w - screen.w * widthRatio) or 0),
-        y = screen.y + (state.lastV == "down" and (screen.h - screen.h * heightRatio) or 0),
-    }
+    if isHorizontal then
+        local slotWidth = screen.w * widthRatio
+        -- Only allow multiple slots for sizes that tile evenly (1/n where n is integer)
+        local tilesEvenly = math.abs(widthRatio - 1/math.floor(1/widthRatio + 0.5)) < 0.01
+        local maxSlot = tilesEvenly and (math.floor(1 / widthRatio + 0.5) - 1) or 0
+        local currentSlot = math.floor((currentFrame.x - screen.x) / slotWidth + 0.5)
+        currentSlot = math.max(0, math.min(maxSlot, currentSlot))  -- clamp
 
-    win:setFrame(f, 0)
+        -- For non-tiling sizes, detect actual edge position
+        local atLeftEdge = currentFrame.x <= screen.x + 10
+        local atRightEdge = currentFrame.x + currentFrame.w >= screen.x + screen.w - 10
+
+        if direction == "left" then
+            if tilesEvenly and currentSlot > 0 then
+                currentSlot = currentSlot - 1
+            elseif atLeftEdge then
+                -- At left edge: cycle width
+                state.widthIndex = (state.widthIndex % #sizes) + 1
+                widthRatio = sizes[state.widthIndex]
+                currentSlot = 0
+            else
+                -- Move to left edge
+                currentSlot = 0
+            end
+        else -- right
+            if tilesEvenly and currentSlot < maxSlot then
+                currentSlot = currentSlot + 1
+            elseif atRightEdge then
+                -- At right edge: cycle width, stay on right edge
+                state.widthIndex = (state.widthIndex % #sizes) + 1
+                widthRatio = sizes[state.widthIndex]
+                currentSlot = -1  -- flag: right edge
+            else
+                -- Move to right edge
+                currentSlot = -1
+            end
+        end
+
+        -- Reset height to 100% unless Shift held
+        if not preserveSize then
+            state.heightIndex = 0
+            heightRatio = 1
+        end
+
+        local f = {
+            w = screen.w * widthRatio,
+            h = screen.h * heightRatio,
+            x = currentSlot == -1
+                and (screen.x + screen.w - screen.w * widthRatio)
+                or (screen.x + currentSlot * screen.w * widthRatio),
+            y = preserveSize and currentFrame.y or screen.y,
+        }
+        win:setFrame(f, 0)
+    else
+        local slotHeight = screen.h * heightRatio
+        local maxSlot = math.floor(1 / heightRatio + 0.5) - 1
+        local currentSlot = math.floor((currentFrame.y - screen.y) / slotHeight + 0.5)
+        currentSlot = math.max(0, math.min(maxSlot, currentSlot))  -- clamp
+
+        if direction == "up" then
+            if currentSlot > 0 then
+                currentSlot = currentSlot - 1
+            else
+                -- At top edge: cycle height
+                state.heightIndex = (state.heightIndex % #sizes) + 1
+                heightRatio = sizes[state.heightIndex]
+                currentSlot = 0
+            end
+        else -- down
+            if currentSlot < maxSlot then
+                currentSlot = currentSlot + 1
+            else
+                -- At bottom edge: cycle height
+                state.heightIndex = (state.heightIndex % #sizes) + 1
+                heightRatio = sizes[state.heightIndex]
+                local newMaxSlot = math.floor(1 / heightRatio + 0.5) - 1
+                currentSlot = newMaxSlot
+            end
+        end
+
+        -- Preserve current x position and width
+        local f = {
+            w = currentFrame.w,
+            h = screen.h * heightRatio,
+            x = currentFrame.x,
+            y = screen.y + currentSlot * screen.h * heightRatio,
+        }
+        win:setFrame(f, 0)
+    end
 end
 
 --- WindowSnap:resetState(winId)
@@ -152,8 +214,9 @@ end
 ---  * The WindowSnap object
 ---
 --- Notes:
----  * Hold Shift to prevent height reset. When snapping to the opposite side,
----    height resets (to 100% for left↔right, to 50% for up↔down).
+---  * Left/right moves between slots, cycles width at edges (resets height to 100%)
+---  * Up/down moves between slots, cycles height at edges (preserves width)
+---  * Hold Shift to preserve height on left/right
 ---  * If AeroSpace is running and window is tiled, hotkeys do nothing
 ---
 --- Example:

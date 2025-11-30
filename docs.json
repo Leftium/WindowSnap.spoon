@@ -70,7 +70,7 @@
         "parameters" : []
       },
       {
-        "doc" : "Bind hotkeys for window snapping.\nAutomatically binds both normal and Shift variants for runtime Shift detection.\n\nParameters:\n * mapping - A table with action names as keys and hotkey specs as values.\n   Each hotkey spec is a table: {modifiers, key}\n   Supported actions: left, right, up, down\n\nReturns:\n * The WindowSnap object\n\nNotes:\n * Hold Shift to prevent height reset. When snapping to the opposite side,\n   height resets (to 100% for left↔right, to 50% for up↔down).\n * If AeroSpace is running and window is tiled, hotkeys do nothing\n\nExample:\n ```lua\n spoon.WindowSnap:bindHotkeys({\n     left  = {{\"ctrl\", \"alt\"}, \"left\"},\n     right = {{\"ctrl\", \"alt\"}, \"right\"},\n     up    = {{\"ctrl\", \"alt\"}, \"up\"},\n     down  = {{\"ctrl\", \"alt\"}, \"down\"},\n })\n ```",
+        "doc" : "Bind hotkeys for window snapping.\nAutomatically binds both normal and Shift variants for runtime Shift detection.\n\nParameters:\n * mapping - A table with action names as keys and hotkey specs as values.\n   Each hotkey spec is a table: {modifiers, key}\n   Supported actions: left, right, up, down\n\nReturns:\n * The WindowSnap object\n\nNotes:\n * Left/right moves between slots, cycles width at edges (resets height to 100%)\n * Up/down moves between slots, cycles height at edges (preserves width)\n * Hold Shift to preserve height on left/right\n * If AeroSpace is running and window is tiled, hotkeys do nothing\n\nExample:\n ```lua\n spoon.WindowSnap:bindHotkeys({\n     left  = {{\"ctrl\", \"alt\"}, \"left\"},\n     right = {{\"ctrl\", \"alt\"}, \"right\"},\n     up    = {{\"ctrl\", \"alt\"}, \"up\"},\n     down  = {{\"ctrl\", \"alt\"}, \"down\"},\n })\n ```",
         "desc" : "Bind hotkeys for window snapping.",
         "def" : "WindowSnap:bindHotkeys(mapping)",
         "stripped_doc" : [
@@ -79,8 +79,9 @@
           ""
         ],
         "notes" : [
-          " * Hold Shift to prevent height reset. When snapping to the opposite side,",
-          "   height resets (to 100% for left↔right, to 50% for up↔down).",
+          " * Left/right moves between slots, cycles width at edges (resets height to 100%)",
+          " * Up/down moves between slots, cycles height at edges (preserves width)",
+          " * Hold Shift to preserve height on left/right",
           " * If AeroSpace is running and window is tiled, hotkeys do nothing",
           "",
           "Example:",
@@ -108,14 +109,13 @@
         ]
       },
       {
-        "doc" : "Snap the focused window in the given direction.\nRepeating the same direction cycles through sizes.\nHold Shift to prevent height reset. When snapping to the opposite side,\nheight resets (to 100% for left↔right, to 50% for up↔down).\n\nParameters:\n * direction - \"left\", \"right\", \"up\", or \"down\"\n\nReturns:\n * None",
-        "desc" : "Snap the focused window in the given direction.",
+        "doc" : "Move window in the given direction between slots; cycle size at edges.\nLeft/right resets height to 100% (hold Shift to preserve).\nUp/down preserves width.\n\nParameters:\n * direction - \"left\", \"right\", \"up\", or \"down\"\n\nReturns:\n * None",
+        "desc" : "Move window in the given direction between slots; cycle size at edges.",
         "def" : "WindowSnap:move(direction)",
         "stripped_doc" : [
-          "Snap the focused window in the given direction.",
-          "Repeating the same direction cycles through sizes.",
-          "Hold Shift to prevent height reset. When snapping to the opposite side,",
-          "height resets (to 100% for left↔right, to 50% for up↔down).",
+          "Move window in the given direction between slots; cycle size at edges.",
+          "Left/right resets height to 100% (hold Shift to preserve).",
+          "Up/down preserves width.",
           ""
         ],
         "notes" : [],
@@ -153,14 +153,13 @@
     ],
     "Method" : [
       {
-        "doc" : "Snap the focused window in the given direction.\nRepeating the same direction cycles through sizes.\nHold Shift to prevent height reset. When snapping to the opposite side,\nheight resets (to 100% for left↔right, to 50% for up↔down).\n\nParameters:\n * direction - \"left\", \"right\", \"up\", or \"down\"\n\nReturns:\n * None",
-        "desc" : "Snap the focused window in the given direction.",
+        "doc" : "Move window in the given direction between slots; cycle size at edges.\nLeft/right resets height to 100% (hold Shift to preserve).\nUp/down preserves width.\n\nParameters:\n * direction - \"left\", \"right\", \"up\", or \"down\"\n\nReturns:\n * None",
+        "desc" : "Move window in the given direction between slots; cycle size at edges.",
         "def" : "WindowSnap:move(direction)",
         "stripped_doc" : [
-          "Snap the focused window in the given direction.",
-          "Repeating the same direction cycles through sizes.",
-          "Hold Shift to prevent height reset. When snapping to the opposite side,",
-          "height resets (to 100% for left↔right, to 50% for up↔down).",
+          "Move window in the given direction between slots; cycle size at edges.",
+          "Left/right resets height to 100% (hold Shift to preserve).",
+          "Up/down preserves width.",
           ""
         ],
         "notes" : [],
@@ -196,7 +195,7 @@
         ]
       },
       {
-        "doc" : "Bind hotkeys for window snapping.\nAutomatically binds both normal and Shift variants for runtime Shift detection.\n\nParameters:\n * mapping - A table with action names as keys and hotkey specs as values.\n   Each hotkey spec is a table: {modifiers, key}\n   Supported actions: left, right, up, down\n\nReturns:\n * The WindowSnap object\n\nNotes:\n * Hold Shift to prevent height reset. When snapping to the opposite side,\n   height resets (to 100% for left↔right, to 50% for up↔down).\n * If AeroSpace is running and window is tiled, hotkeys do nothing\n\nExample:\n ```lua\n spoon.WindowSnap:bindHotkeys({\n     left  = {{\"ctrl\", \"alt\"}, \"left\"},\n     right = {{\"ctrl\", \"alt\"}, \"right\"},\n     up    = {{\"ctrl\", \"alt\"}, \"up\"},\n     down  = {{\"ctrl\", \"alt\"}, \"down\"},\n })\n ```",
+        "doc" : "Bind hotkeys for window snapping.\nAutomatically binds both normal and Shift variants for runtime Shift detection.\n\nParameters:\n * mapping - A table with action names as keys and hotkey specs as values.\n   Each hotkey spec is a table: {modifiers, key}\n   Supported actions: left, right, up, down\n\nReturns:\n * The WindowSnap object\n\nNotes:\n * Left/right moves between slots, cycles width at edges (resets height to 100%)\n * Up/down moves between slots, cycles height at edges (preserves width)\n * Hold Shift to preserve height on left/right\n * If AeroSpace is running and window is tiled, hotkeys do nothing\n\nExample:\n ```lua\n spoon.WindowSnap:bindHotkeys({\n     left  = {{\"ctrl\", \"alt\"}, \"left\"},\n     right = {{\"ctrl\", \"alt\"}, \"right\"},\n     up    = {{\"ctrl\", \"alt\"}, \"up\"},\n     down  = {{\"ctrl\", \"alt\"}, \"down\"},\n })\n ```",
         "desc" : "Bind hotkeys for window snapping.",
         "def" : "WindowSnap:bindHotkeys(mapping)",
         "stripped_doc" : [
@@ -205,8 +204,9 @@
           ""
         ],
         "notes" : [
-          " * Hold Shift to prevent height reset. When snapping to the opposite side,",
-          "   height resets (to 100% for left↔right, to 50% for up↔down).",
+          " * Left/right moves between slots, cycles width at edges (resets height to 100%)",
+          " * Up/down moves between slots, cycles height at edges (preserves width)",
+          " * Hold Shift to preserve height on left/right",
           " * If AeroSpace is running and window is tiled, hotkeys do nothing",
           "",
           "Example:",
@@ -235,7 +235,7 @@
       }
     ],
     "Command" : [],
-    "doc" : "Windows Snap-style window management with size cycling.\nSnaps windows to screen edges with configurable size cycling.\n\nFeatures:\n * Snap to edges, cycle through sizes (1/2, 1/3, 2/3) on repeat\n * Hold Shift to prevent height reset (when snapping to the opposite side,\n   height resets to 100% for left↔right, to 50% for up↔down)\n * AeroSpace integration: ignores tiled windows\n\nQuick start:\n  hs.loadSpoon(\"WindowSnap\")\n  spoon.WindowSnap:bindHotkeys({\n      left  = {{\"ctrl\", \"alt\"}, \"left\"},\n      right = {{\"ctrl\", \"alt\"}, \"right\"},\n      up    = {{\"ctrl\", \"alt\"}, \"up\"},\n      down  = {{\"ctrl\", \"alt\"}, \"down\"},\n  })\n\nDownload: https://github.com/leftium/WindowSnap.spoon",
+    "doc" : "Windows Snap-style window management with size cycling.\nSnaps windows to screen edges with configurable size cycling.\n\nFeatures:\n * Left/right moves between slots, cycles width at edges (resets height to 100%)\n * Up/down moves between slots, cycles height at edges (preserves width)\n * Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges\n * Hold Shift to preserve height on left/right\n * AeroSpace integration: ignores tiled windows\n\nQuick start:\n  hs.loadSpoon(\"WindowSnap\")\n  spoon.WindowSnap:bindHotkeys({\n      left  = {{\"ctrl\", \"alt\"}, \"left\"},\n      right = {{\"ctrl\", \"alt\"}, \"right\"},\n      up    = {{\"ctrl\", \"alt\"}, \"up\"},\n      down  = {{\"ctrl\", \"alt\"}, \"down\"},\n  })\n\nDownload: https://github.com/leftium/WindowSnap.spoon",
     "Field" : [],
     "name" : "WindowSnap"
   }
