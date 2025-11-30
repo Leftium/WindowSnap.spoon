@@ -4,10 +4,10 @@
 --- Snaps windows to screen edges with configurable size cycling.
 ---
 --- Features:
----  * Left/right moves between slots, cycles width at edges (resets height to 100%)
----  * Up/down moves between slots, cycles height at edges (resets height to 50%)
+---  * Left/right snaps to edge, cycles width at edge (resets to 50% width, 100% height)
+---  * Up/down snaps to edge, cycles height at edge (resets to 50% height, preserves width)
 ---  * Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges
----  * Hold Shift to preserve height (without Shift: resets to 100% for left/right, 50% for up/down)
+---  * Hold Shift to preserve size and move between slots
 ---  * AeroSpace integration: ignores tiled windows
 ---
 --- Quick start:
@@ -103,36 +103,45 @@ function obj:move(direction)
         local atLeftEdge = currentFrame.x <= screen.x + 10
         local atRightEdge = currentFrame.x + currentFrame.w >= screen.x + screen.w - 10
 
+        local cycling = false
         if direction == "left" then
-            if tilesEvenly and currentSlot > 0 then
-                currentSlot = currentSlot - 1
-            elseif atLeftEdge then
+            if atLeftEdge then
                 -- At left edge: cycle width
                 state.widthIndex = (state.widthIndex % #sizes) + 1
                 widthRatio = sizes[state.widthIndex]
                 currentSlot = 0
+                cycling = true
+            elseif preserveSize and tilesEvenly and currentSlot > 0 then
+                -- Shift held: move between slots
+                currentSlot = currentSlot - 1
             else
-                -- Move to left edge
+                -- Snap to left edge
                 currentSlot = 0
             end
         else -- right
-            if tilesEvenly and currentSlot < maxSlot then
-                currentSlot = currentSlot + 1
-            elseif atRightEdge then
+            if atRightEdge then
                 -- At right edge: cycle width, stay on right edge
                 state.widthIndex = (state.widthIndex % #sizes) + 1
                 widthRatio = sizes[state.widthIndex]
                 currentSlot = -1  -- flag: right edge
+                cycling = true
+            elseif preserveSize and tilesEvenly and currentSlot < maxSlot then
+                -- Shift held: move between slots
+                currentSlot = currentSlot + 1
             else
-                -- Move to right edge
+                -- Snap to right edge
                 currentSlot = -1
             end
         end
 
-        -- Reset height to 100% unless Shift held
-        if not preserveSize then
-            state.heightIndex = 0
+        -- Reset when snapping (not cycling), unless Shift held
+        if not cycling and not preserveSize then
+            state.widthIndex = 1  -- Reset width to 50%
+            widthRatio = sizes[1]
+            state.heightIndex = 0  -- Reset height to 100%
             heightRatio = 1
+            -- Snap to edge in direction of movement
+            currentSlot = (direction == "left") and 0 or -1
         end
 
         local f = {
@@ -158,29 +167,31 @@ function obj:move(direction)
 
         local cycling = false
         if direction == "up" then
-            if tilesEvenly and currentSlot > 0 then
-                currentSlot = currentSlot - 1
-            elseif atTopEdge then
+            if atTopEdge then
                 -- At top edge: cycle height
                 state.heightIndex = (state.heightIndex % #sizes) + 1
                 heightRatio = sizes[state.heightIndex]
                 currentSlot = 0
                 cycling = true
+            elseif preserveSize and tilesEvenly and currentSlot > 0 then
+                -- Shift held: move between slots
+                currentSlot = currentSlot - 1
             else
-                -- Move to top edge
+                -- Snap to top edge
                 currentSlot = 0
             end
         else -- down
-            if tilesEvenly and currentSlot < maxSlot then
-                currentSlot = currentSlot + 1
-            elseif atBottomEdge then
+            if atBottomEdge then
                 -- At bottom edge: cycle height, stay at bottom
                 state.heightIndex = (state.heightIndex % #sizes) + 1
                 heightRatio = sizes[state.heightIndex]
                 currentSlot = -1  -- flag: bottom edge
                 cycling = true
+            elseif preserveSize and tilesEvenly and currentSlot < maxSlot then
+                -- Shift held: move between slots
+                currentSlot = currentSlot + 1
             else
-                -- Move to bottom edge
+                -- Snap to bottom edge
                 currentSlot = -1
             end
         end
@@ -189,6 +200,8 @@ function obj:move(direction)
         if not cycling and not preserveSize then
             state.heightIndex = 1  -- Reset to first size (50%)
             heightRatio = sizes[1]
+            -- Snap to edge in direction of movement
+            currentSlot = (direction == "up") and 0 or -1
         end
 
         -- Preserve current x position and width
