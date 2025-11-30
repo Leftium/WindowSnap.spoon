@@ -1,13 +1,12 @@
 --- === WindowSnap ===
 ---
---- Windows Snap-style window management with size cycling.
---- Snaps windows to screen edges with configurable size cycling.
+--- Windows Snap-style window management with complement-based snapping.
 ---
 --- Features:
----  * Left/right snaps to edge, cycles width at edge (resets to 50% width, 100% height)
----  * Up/down snaps to edge, cycles height at edge (resets to 50% height, preserves width)
----  * Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges
----  * Hold Shift to preserve size and move between slots
+---  * Unshifted: Snap to edge with complement size (1/3<->2/3, 1/2<->1/2), preserve other axis
+---  * Unshifted at edge: Cycle between 50% and 100%
+---  * Shifted: Move between slots (for tiling sizes 1/2, 1/3), preserving size
+---  * Shifted at edge: Cycle through 1/2 -> 2/3 -> 1/3
 ---  * AeroSpace integration: ignores tiled windows
 ---
 --- Quick start:
@@ -31,11 +30,6 @@ obj.author = "Leftium <john@leftium.com>"
 obj.homepage = "https://github.com/leftium/WindowSnap.spoon"
 obj.license = "MIT - https://opensource.org/licenses/MIT"
 
---- WindowSnap.sizes
---- Variable
---- Size ratios to cycle through. Default: { 0.5, 1/3, 2/3 }
-obj.sizes = { 0.5, 1/3, 2/3 }
-
 --- WindowSnap.aerospacePath
 --- Variable
 --- Path to aerospace binary. Default: "/opt/homebrew/bin/aerospace"
@@ -44,6 +38,27 @@ obj.aerospacePath = "/opt/homebrew/bin/aerospace"
 
 -- Private: Per-window state
 obj._windowState = {}
+
+-- Tiling sizes for shifted cycling
+local tilingSizes = { 0.5, 2/3, 1/3 }
+
+-- Helper: Get complement size (1/3 <-> 2/3, 1/2 <-> 1/2)
+local function getComplementSize(ratio)
+    local tolerance = 0.01
+    if math.abs(ratio - 1/3) < tolerance then return 2/3 end
+    if math.abs(ratio - 2/3) < tolerance then return 1/3 end
+    if math.abs(ratio - 0.5) < tolerance then return 0.5 end
+    return 0.5  -- non-tiling sizes default to 50%
+end
+
+-- Helper: Get index in tilingSizes, or 0 if not found
+local function getTilingSizeIndex(ratio)
+    local tolerance = 0.01
+    for i, size in ipairs(tilingSizes) do
+        if math.abs(ratio - size) < tolerance then return i end
+    end
+    return 0
+end
 
 -- Check if AeroSpace is running and focused window is tiled
 local function isAerospaceTiled(aerospacePath)
@@ -60,9 +75,16 @@ end
 
 --- WindowSnap:move(direction)
 --- Method
---- Move window in the given direction between slots; cycle size at edges.
---- Left/right resets height to 100% (hold Shift to preserve).
---- Up/down preserves width.
+--- Move window in the given direction.
+---
+--- Unshifted behavior:
+---  * Not at target edge: Snap to target edge with complement size, preserve other axis
+---  * At target edge: Cycle between 50% and 100%
+---
+--- Shifted behavior:
+---  * Tiling size (1/2, 1/3): Move between slots, preserve size
+---  * At target edge: Cycle through 1/2 -> 2/3 -> 1/3
+---  * Non-tiling size: Move to target edge, preserve size
 ---
 --- Parameters:
 ---  * direction - "left", "right", "up", or "down"
@@ -75,146 +97,163 @@ function obj:move(direction)
     if isAerospaceTiled(self.aerospacePath) then return end
 
     local winId = win:id()
-    local sizes = self.sizes
-    local preserveSize = hs.eventtap.checkKeyboardModifiers().shift
+    local shiftHeld = hs.eventtap.checkKeyboardModifiers().shift
     local screen = win:screen():frame()
-    local currentFrame = win:frame()
+    local f = win:frame()
     local isHorizontal = (direction == "left" or direction == "right")
+    local tolerance = 10
 
-    -- Initialize state for this window (only tracks size indices now)
+    -- Initialize state for this window
     if not self._windowState[winId] then
-        self._windowState[winId] = { widthIndex = 1, heightIndex = 0 }
+        self._windowState[winId] = { widthIndex = 1, heightIndex = 1 }
     end
     local state = self._windowState[winId]
 
-    -- Get current size ratios
-    local widthRatio = state.widthIndex > 0 and sizes[state.widthIndex] or 1
-    local heightRatio = state.heightIndex > 0 and sizes[state.heightIndex] or 1
+    -- Detect current position and size
+    local atLeftEdge = f.x <= screen.x + tolerance
+    local atRightEdge = f.x + f.w >= screen.x + screen.w - tolerance
+    local atTopEdge = f.y <= screen.y + tolerance
+    local atBottomEdge = f.y + f.h >= screen.y + screen.h - tolerance
+
+    local widthRatio = f.w / screen.w
+    local heightRatio = f.h / screen.h
+    local isFullWidth = math.abs(widthRatio - 1) < 0.01
+    local isFullHeight = math.abs(heightRatio - 1) < 0.01
 
     if isHorizontal then
-        local slotWidth = screen.w * widthRatio
-        -- Only allow multiple slots for sizes that tile evenly (1/n where n is integer)
-        local tilesEvenly = math.abs(widthRatio - 1/math.floor(1/widthRatio + 0.5)) < 0.01
-        local maxSlot = tilesEvenly and (math.floor(1 / widthRatio + 0.5) - 1) or 0
-        local currentSlot = math.floor((currentFrame.x - screen.x) / slotWidth + 0.5)
-        currentSlot = math.max(0, math.min(maxSlot, currentSlot))  -- clamp
-
-        -- For non-tiling sizes, detect actual edge position
-        local atLeftEdge = currentFrame.x <= screen.x + 10
-        local atRightEdge = currentFrame.x + currentFrame.w >= screen.x + screen.w - 10
-
-        local cycling = false
+        local targetEdge = (direction == "left") and "left" or "right"
+        local atTargetEdge
         if direction == "left" then
-            if atLeftEdge then
-                -- At left edge: cycle width
-                state.widthIndex = (state.widthIndex % #sizes) + 1
-                widthRatio = sizes[state.widthIndex]
-                currentSlot = 0
-                cycling = true
-            elseif preserveSize and tilesEvenly and currentSlot > 0 then
-                -- Shift held: move between slots
-                currentSlot = currentSlot - 1
-            else
-                -- Snap to left edge
-                currentSlot = 0
-            end
-        else -- right
-            if atRightEdge then
-                -- At right edge: cycle width, stay on right edge
-                state.widthIndex = (state.widthIndex % #sizes) + 1
-                widthRatio = sizes[state.widthIndex]
-                currentSlot = -1  -- flag: right edge
-                cycling = true
-            elseif preserveSize and tilesEvenly and currentSlot < maxSlot then
-                -- Shift held: move between slots
-                currentSlot = currentSlot + 1
-            else
-                -- Snap to right edge
-                currentSlot = -1
-            end
+            atTargetEdge = atLeftEdge
+        else
+            atTargetEdge = atRightEdge
         end
 
-        -- Reset when snapping (not cycling), unless Shift held
-        if not cycling and not preserveSize then
-            state.widthIndex = 1  -- Reset width to 50%
-            widthRatio = sizes[1]
-            state.heightIndex = 0  -- Reset height to 100%
-            heightRatio = 1
-            -- Snap to edge in direction of movement
-            currentSlot = (direction == "left") and 0 or -1
-        end
+        if atTargetEdge then
+            -- AT TARGET EDGE: Cycle
+            if shiftHeld then
+                -- Shifted cycling: 1/2 -> 2/3 -> 1/3 -> 1/2...
+                state.widthIndex = (state.widthIndex % #tilingSizes) + 1
+                widthRatio = tilingSizes[state.widthIndex]
+            else
+                -- Unshifted cycling: 50% <-> 100%
+                if isFullWidth then
+                    widthRatio = 0.5
+                    state.widthIndex = 1
+                else
+                    widthRatio = 1
+                    state.widthIndex = 0  -- 0 means 100%
+                end
+            end
+            -- Stay at target edge
+            f.w = screen.w * widthRatio
+            f.x = (targetEdge == "left") and screen.x or (screen.x + screen.w - f.w)
+            -- Preserve height and y when cycling
+        else
+            -- NOT AT TARGET EDGE: Snap or move
+            if shiftHeld then
+                -- Shifted: Move between slots (for tiling sizes) or to edge
+                -- Check if width tiles evenly (1/n where n is integer)
+                local tilesEvenly = math.abs(widthRatio - 1/math.floor(1/widthRatio + 0.5)) < 0.01
+                if tilesEvenly then
+                    local slotWidth = screen.w * widthRatio
+                    local maxSlot = math.floor(1 / widthRatio + 0.5) - 1
+                    local currentSlot = math.floor((f.x - screen.x) / slotWidth + 0.5)
+                    currentSlot = math.max(0, math.min(maxSlot, currentSlot))
 
-        local f = {
-            w = screen.w * widthRatio,
-            h = screen.h * heightRatio,
-            x = currentSlot == -1
-                and (screen.x + screen.w - screen.w * widthRatio)
-                or (screen.x + currentSlot * screen.w * widthRatio),
-            y = preserveSize and currentFrame.y or screen.y,
-        }
-        win:setFrame(f, 0)
+                    if direction == "left" and currentSlot > 0 then
+                        currentSlot = currentSlot - 1
+                        f.x = screen.x + currentSlot * slotWidth
+                    elseif direction == "right" and currentSlot < maxSlot then
+                        currentSlot = currentSlot + 1
+                        f.x = screen.x + currentSlot * slotWidth
+                    else
+                        -- At edge already, snap to edge
+                        f.x = (targetEdge == "left") and screen.x or (screen.x + screen.w - f.w)
+                    end
+                else
+                    -- Non-tiling size: just move to edge
+                    f.x = (targetEdge == "left") and screen.x or (screen.x + screen.w - f.w)
+                end
+                -- Preserve width and height
+            else
+                -- Unshifted: Snap with complement width, preserve height
+                local complementWidth = getComplementSize(widthRatio)
+                state.widthIndex = getTilingSizeIndex(complementWidth)
+                f.w = screen.w * complementWidth
+                f.x = (targetEdge == "left") and screen.x or (screen.x + screen.w - f.w)
+                -- Preserve height and y
+            end
+        end
     else
-        local slotHeight = screen.h * heightRatio
-        -- Only allow multiple slots for sizes that tile evenly (1/n where n is integer)
-        local tilesEvenly = math.abs(heightRatio - 1/math.floor(1/heightRatio + 0.5)) < 0.01
-        local maxSlot = tilesEvenly and (math.floor(1 / heightRatio + 0.5) - 1) or 0
-        local currentSlot = math.floor((currentFrame.y - screen.y) / slotHeight + 0.5)
-        currentSlot = math.max(0, math.min(maxSlot, currentSlot))  -- clamp
-
-        -- For non-tiling sizes, detect actual edge position
-        local atTopEdge = currentFrame.y <= screen.y + 10
-        local atBottomEdge = currentFrame.y + currentFrame.h >= screen.y + screen.h - 10
-
-        local cycling = false
+        -- Vertical (up/down)
+        local targetEdge = (direction == "up") and "top" or "bottom"
+        local atTargetEdge
         if direction == "up" then
-            if atTopEdge then
-                -- At top edge: cycle height
-                state.heightIndex = (state.heightIndex % #sizes) + 1
-                heightRatio = sizes[state.heightIndex]
-                currentSlot = 0
-                cycling = true
-            elseif preserveSize and tilesEvenly and currentSlot > 0 then
-                -- Shift held: move between slots
-                currentSlot = currentSlot - 1
-            else
-                -- Snap to top edge
-                currentSlot = 0
-            end
-        else -- down
-            if atBottomEdge then
-                -- At bottom edge: cycle height, stay at bottom
-                state.heightIndex = (state.heightIndex % #sizes) + 1
-                heightRatio = sizes[state.heightIndex]
-                currentSlot = -1  -- flag: bottom edge
-                cycling = true
-            elseif preserveSize and tilesEvenly and currentSlot < maxSlot then
-                -- Shift held: move between slots
-                currentSlot = currentSlot + 1
-            else
-                -- Snap to bottom edge
-                currentSlot = -1
-            end
+            atTargetEdge = atTopEdge
+        else
+            atTargetEdge = atBottomEdge
         end
 
-        -- Reset height to 50% when snapping (not cycling), unless Shift held
-        if not cycling and not preserveSize then
-            state.heightIndex = 1  -- Reset to first size (50%)
-            heightRatio = sizes[1]
-            -- Snap to edge in direction of movement
-            currentSlot = (direction == "up") and 0 or -1
-        end
+        if atTargetEdge then
+            -- AT TARGET EDGE: Cycle
+            if shiftHeld then
+                -- Shifted cycling: 1/2 -> 2/3 -> 1/3 -> 1/2...
+                state.heightIndex = (state.heightIndex % #tilingSizes) + 1
+                heightRatio = tilingSizes[state.heightIndex]
+            else
+                -- Unshifted cycling: 50% <-> 100%
+                if isFullHeight then
+                    heightRatio = 0.5
+                    state.heightIndex = 1
+                else
+                    heightRatio = 1
+                    state.heightIndex = 0  -- 0 means 100%
+                end
+            end
+            -- Stay at target edge
+            f.h = screen.h * heightRatio
+            f.y = (targetEdge == "top") and screen.y or (screen.y + screen.h - f.h)
+            -- Preserve width and x when cycling
+        else
+            -- NOT AT TARGET EDGE: Snap or move
+            if shiftHeld then
+                -- Shifted: Move between slots (for tiling sizes) or to edge
+                -- Check if height tiles evenly (1/n where n is integer)
+                local tilesEvenly = math.abs(heightRatio - 1/math.floor(1/heightRatio + 0.5)) < 0.01
+                if tilesEvenly then
+                    local slotHeight = screen.h * heightRatio
+                    local maxSlot = math.floor(1 / heightRatio + 0.5) - 1
+                    local currentSlot = math.floor((f.y - screen.y) / slotHeight + 0.5)
+                    currentSlot = math.max(0, math.min(maxSlot, currentSlot))
 
-        -- Preserve current x position and width
-        local f = {
-            w = currentFrame.w,
-            h = screen.h * heightRatio,
-            x = currentFrame.x,
-            y = currentSlot == -1
-                and (screen.y + screen.h - screen.h * heightRatio)
-                or (screen.y + currentSlot * screen.h * heightRatio),
-        }
-        win:setFrame(f, 0)
+                    if direction == "up" and currentSlot > 0 then
+                        currentSlot = currentSlot - 1
+                        f.y = screen.y + currentSlot * slotHeight
+                    elseif direction == "down" and currentSlot < maxSlot then
+                        currentSlot = currentSlot + 1
+                        f.y = screen.y + currentSlot * slotHeight
+                    else
+                        -- At edge already, snap to edge
+                        f.y = (targetEdge == "top") and screen.y or (screen.y + screen.h - f.h)
+                    end
+                else
+                    -- Non-tiling size: just move to edge
+                    f.y = (targetEdge == "top") and screen.y or (screen.y + screen.h - f.h)
+                end
+                -- Preserve width and height
+            else
+                -- Unshifted: Snap with complement height, preserve width
+                local complementHeight = getComplementSize(heightRatio)
+                state.heightIndex = getTilingSizeIndex(complementHeight)
+                f.h = screen.h * complementHeight
+                f.y = (targetEdge == "top") and screen.y or (screen.y + screen.h - f.h)
+                -- Preserve width and x
+            end
+        end
     end
+
+    win:setFrame(f, 0)
 end
 
 --- WindowSnap:resetState(winId)
@@ -249,9 +288,10 @@ end
 ---  * The WindowSnap object
 ---
 --- Notes:
----  * Left/right moves between slots, cycles width at edges (resets height to 100%)
----  * Up/down moves between slots, cycles height at edges (preserves width)
----  * Hold Shift to preserve height on left/right
+---  * Unshifted: Snap to edge with complement size (1/3<->2/3), preserve other axis
+---  * Unshifted at edge: Cycle between 50% and 100%
+---  * Shifted: Move between slots (for tiling sizes), preserving size
+---  * Shifted at edge: Cycle through 1/2 -> 2/3 -> 1/3
 ---  * If AeroSpace is running and window is tiled, hotkeys do nothing
 ---
 --- Example:
