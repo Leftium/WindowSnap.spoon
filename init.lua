@@ -5,9 +5,9 @@
 ---
 --- Features:
 ---  * Left/right moves between slots, cycles width at edges (resets height to 100%)
----  * Up/down moves between slots, cycles height at edges (preserves width)
+---  * Up/down moves between slots, cycles height at edges (resets height to 50%)
 ---  * Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges
----  * Hold Shift to preserve height on left/right
+---  * Hold Shift to preserve height (without Shift: resets to 100% for left/right, 50% for up/down)
 ---  * AeroSpace integration: ignores tiled windows
 ---
 --- Quick start:
@@ -156,6 +156,7 @@ function obj:move(direction)
         local atTopEdge = currentFrame.y <= screen.y + 10
         local atBottomEdge = currentFrame.y + currentFrame.h >= screen.y + screen.h - 10
 
+        local cycling = false
         if direction == "up" then
             if tilesEvenly and currentSlot > 0 then
                 currentSlot = currentSlot - 1
@@ -164,6 +165,7 @@ function obj:move(direction)
                 state.heightIndex = (state.heightIndex % #sizes) + 1
                 heightRatio = sizes[state.heightIndex]
                 currentSlot = 0
+                cycling = true
             else
                 -- Move to top edge
                 currentSlot = 0
@@ -176,10 +178,17 @@ function obj:move(direction)
                 state.heightIndex = (state.heightIndex % #sizes) + 1
                 heightRatio = sizes[state.heightIndex]
                 currentSlot = -1  -- flag: bottom edge
+                cycling = true
             else
                 -- Move to bottom edge
                 currentSlot = -1
             end
+        end
+
+        -- Reset height to 50% when snapping (not cycling), unless Shift held
+        if not cycling and not preserveSize then
+            state.heightIndex = 1  -- Reset to first size (50%)
+            heightRatio = sizes[1]
         end
 
         -- Preserve current x position and width
