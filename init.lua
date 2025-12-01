@@ -102,10 +102,10 @@ function obj:move(direction)
             -- Giga-arrow: focus in direction
             hs.execute(self.aerospacePath .. " focus " .. direction)
         else
-            -- Mega-arrow: move or cycle size (async with &)
+            -- Mega-arrow: move or cycle size (async)
             local binDir = self.aerospacePath:gsub("/[^/]+$", "")
             local scriptPath = os.getenv("HOME") .. "/.config/bin/aerospace-move-or-cycle-size"
-            hs.execute("PATH=" .. binDir .. ":/usr/bin:/bin " .. scriptPath .. " " .. direction .. " &")
+            os.execute("PATH=" .. binDir .. ":/usr/bin:/bin nohup " .. scriptPath .. " " .. direction .. " >/dev/null 2>&1 &")
         end
         return
     end
