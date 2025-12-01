@@ -39,6 +39,10 @@ obj.aerospacePath = "/opt/homebrew/bin/aerospace"
 -- Private: Per-window state
 obj._windowState = {}
 
+-- Private: Cache for tiled status {windowId, isTiled, timestamp}
+obj._tiledCache = {windowId = nil, isTiled = false, timestamp = 0}
+obj._tiledCacheTTL = math.huge  -- infinite (cache cleared by AeroSpace on float toggle)
+
 -- Tiling sizes for cycling
 local cycleSizes = { 0.5, 1/3, 2/3 }
 
@@ -60,15 +64,26 @@ local function getCycleSizeIndex(ratio)
     return 0
 end
 
--- Check if AeroSpace is running and focused window is tiled
-local function isAerospaceTiled(aerospacePath)
-    if not aerospacePath then return false end
+-- Check if AeroSpace is running and focused window is tiled (with caching)
+local function isAerospaceTiled(self, hsWindowId)
+    if not self.aerospacePath then return false end
     if not hs.application.find("AeroSpace") then return false end
 
-    -- Single command: get focused window ID and check if tiled
-    local cmd = aerospacePath .. " list-windows --focused --format '%{window-id}' 2>/dev/null | xargs -I{} " .. aerospacePath .. " debug-windows --window-id {} 2>/dev/null | grep -q TilingContainer"
-    local _, status = hs.execute(cmd)
-    return status == true
+    -- Check cache using Hammerspoon window ID
+    local cache = self._tiledCache
+    local now = hs.timer.absoluteTime()
+    if cache.windowId == hsWindowId and (now - cache.timestamp) < self._tiledCacheTTL then
+        return cache.isTiled
+    end
+
+    -- Cache miss - check if tiled (single piped command)
+    local cmd = self.aerospacePath .. " list-windows --focused --format '%{window-id}' 2>/dev/null | xargs -I{} " .. self.aerospacePath .. " debug-windows --window-id {} 2>/dev/null | grep -q TilingContainer"
+    local _, isTiled = hs.execute(cmd)
+    isTiled = isTiled == true
+
+    -- Update cache
+    self._tiledCache = {windowId = hsWindowId, isTiled = isTiled, timestamp = hs.timer.absoluteTime()}
+    return isTiled
 end
 
 --- WindowSnap:move(direction)
@@ -97,7 +112,7 @@ function obj:move(direction)
     local shiftHeld = hs.eventtap.checkKeyboardModifiers().shift
 
     -- For tiled windows, delegate to AeroSpace if available
-    if isAerospaceTiled(self.aerospacePath) then
+    if isAerospaceTiled(self, winId) then
         if shiftHeld then
             -- Giga-arrow: focus in direction
             hs.execute(self.aerospacePath .. " focus " .. direction)
