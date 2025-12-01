@@ -94,10 +94,32 @@ end
 function obj:move(direction)
     local win = hs.window.focusedWindow()
     if not win then return end
-    if isAerospaceTiled(self.aerospacePath) then return end
 
     local winId = win:id()
     local shiftHeld = hs.eventtap.checkKeyboardModifiers().shift
+
+    -- For tiled windows, delegate to AeroSpace if available
+    if isAerospaceTiled(self.aerospacePath) then
+        if shiftHeld then
+            -- Giga-arrow: focus in direction
+            hs.execute(self.aerospacePath .. " focus " .. direction, true)
+            return
+        end
+        -- Mega-arrow: move or cycle size
+        local scriptPath = self.aerospacePath:gsub("/aerospace$", "") .. "/aerospace-move-or-cycle-size"
+        -- Check if script exists, fall back to default aerospace bin location
+        local testScript = io.open(scriptPath, "r")
+        if not testScript then
+            scriptPath = os.getenv("HOME") .. "/.config/bin/aerospace-move-or-cycle-size"
+            testScript = io.open(scriptPath, "r")
+        end
+        if testScript then
+            testScript:close()
+            hs.execute(scriptPath .. " " .. direction, true)
+            return
+        end
+        -- No script found, fall through to WindowSnap behavior
+    end
     local screen = win:screen():frame()
     local f = win:frame()
     local isHorizontal = (direction == "left" or direction == "right")
