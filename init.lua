@@ -4,9 +4,9 @@
 ---
 --- Features:
 ---  * Unshifted: Snap to edge with complement size (1/3<->2/3, 1/2<->1/2), preserve other axis
----  * Unshifted at edge: Toggle 100% <-> 50%
+---  * Unshifted at edge: Cycle 1/2 -> 1/3 -> 2/3
 ---  * Shifted: Move between slots (for tiling sizes 1/2, 1/3), preserving size
----  * Shifted at edge: Cycle 1/2 -> 1/3 -> 2/3
+---  * Shifted at edge: Toggle 100% <-> 50%
 ---  * AeroSpace integration: ignores tiled windows
 ---
 --- Quick start:
@@ -156,13 +156,9 @@ function obj:move(direction)
         end
 
         if atTargetEdge then
-            -- AT TARGET EDGE: Cycle or maximize
+            -- AT TARGET EDGE: Cycle or toggle
             if shiftHeld then
-                -- Shifted cycling: 1/2 -> 1/3 -> 2/3 -> 1/2...
-                state.widthIndex = (state.widthIndex % #cycleSizes) + 1
-                widthRatio = cycleSizes[state.widthIndex]
-            else
-                -- Unshifted at edge: toggle 100% <-> 50%
+                -- Shifted at edge: toggle 100% <-> 50%
                 if isFullWidth then
                     widthRatio = 0.5
                     state.widthIndex = 1
@@ -170,6 +166,10 @@ function obj:move(direction)
                     widthRatio = 1
                     state.widthIndex = 0  -- 0 means 100%
                 end
+            else
+                -- Unshifted cycling: 1/2 -> 1/3 -> 2/3 -> 1/2...
+                state.widthIndex = (state.widthIndex % #cycleSizes) + 1
+                widthRatio = cycleSizes[state.widthIndex]
             end
             -- Stay at target edge
             f.w = screen.w * widthRatio
@@ -222,13 +222,9 @@ function obj:move(direction)
         end
 
         if atTargetEdge then
-            -- AT TARGET EDGE: Cycle or maximize
+            -- AT TARGET EDGE: Cycle or toggle
             if shiftHeld then
-                -- Shifted cycling: 1/2 -> 1/3 -> 2/3 -> 1/2...
-                state.heightIndex = (state.heightIndex % #cycleSizes) + 1
-                heightRatio = cycleSizes[state.heightIndex]
-            else
-                -- Unshifted at edge: toggle 100% <-> 50%
+                -- Shifted at edge: toggle 100% <-> 50%
                 if isFullHeight then
                     heightRatio = 0.5
                     state.heightIndex = 1
@@ -236,6 +232,10 @@ function obj:move(direction)
                     heightRatio = 1
                     state.heightIndex = 0  -- 0 means 100%
                 end
+            else
+                -- Unshifted cycling: 1/2 -> 1/3 -> 2/3 -> 1/2...
+                state.heightIndex = (state.heightIndex % #cycleSizes) + 1
+                heightRatio = cycleSizes[state.heightIndex]
             end
             -- Stay at target edge
             f.h = screen.h * heightRatio
@@ -315,9 +315,9 @@ end
 ---
 --- Notes:
 ---  * Unshifted: Snap to edge with complement size (1/3<->2/3), preserve other axis
----  * Unshifted at edge: Toggle 100% <-> 50%
+---  * Unshifted at edge: Cycle 1/2 -> 1/3 -> 2/3
 ---  * Shifted: Move between slots (for tiling sizes), preserving size
----  * Shifted at edge: Cycle 1/2 -> 1/3 -> 2/3
+---  * Shifted at edge: Toggle 100% <-> 50%
 ---  * If AeroSpace is running and window is tiled, hotkeys do nothing
 ---
 --- Example:
