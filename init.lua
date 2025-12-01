@@ -39,6 +39,10 @@ obj.aerospacePath = "/opt/homebrew/bin/aerospace"
 -- Private: Per-window state
 obj._windowState = {}
 
+-- Private: Cache for tiled status {windowId, isTiled, timestamp}
+obj._tiledCache = {windowId = nil, isTiled = false, timestamp = 0}
+obj._tiledCacheTTL = 2  -- seconds
+
 -- Tiling sizes for cycling
 local cycleSizes = { 0.5, 1/3, 2/3 }
 
@@ -60,17 +64,29 @@ local function getCycleSizeIndex(ratio)
     return 0
 end
 
--- Check if AeroSpace is running and focused window is tiled
-local function isAerospaceTiled(aerospacePath)
-    if not aerospacePath then return false end
+-- Check if AeroSpace is running and focused window is tiled (with caching)
+local function isAerospaceTiled(self)
+    if not self.aerospacePath then return false end
     if not hs.application.find("AeroSpace") then return false end
 
-    local aeroWinId, status = hs.execute(aerospacePath .. " list-windows --focused --format '%{window-id}' 2>/dev/null")
+    local aeroWinId, status = hs.execute(self.aerospacePath .. " list-windows --focused --format '%{window-id}' 2>/dev/null")
     if not status or aeroWinId:gsub("%s+", "") == "" then return false end
     aeroWinId = aeroWinId:gsub("%s+", "")
 
-    local output = hs.execute(aerospacePath .. " debug-windows --window-id " .. aeroWinId .. " 2>/dev/null")
-    return output:find("TilingContainer", 1, true) ~= nil
+    -- Check cache
+    local cache = self._tiledCache
+    local now = os.time()
+    if cache.windowId == aeroWinId and (now - cache.timestamp) < self._tiledCacheTTL then
+        return cache.isTiled
+    end
+
+    -- Cache miss - check if tiled
+    local output = hs.execute(self.aerospacePath .. " debug-windows --window-id " .. aeroWinId .. " 2>/dev/null")
+    local isTiled = output:find("TilingContainer", 1, true) ~= nil
+
+    -- Update cache
+    self._tiledCache = {windowId = aeroWinId, isTiled = isTiled, timestamp = now}
+    return isTiled
 end
 
 --- WindowSnap:move(direction)
@@ -99,26 +115,17 @@ function obj:move(direction)
     local shiftHeld = hs.eventtap.checkKeyboardModifiers().shift
 
     -- For tiled windows, delegate to AeroSpace if available
-    if isAerospaceTiled(self.aerospacePath) then
+    if isAerospaceTiled(self) then
         if shiftHeld then
             -- Giga-arrow: focus in direction
-            hs.execute(self.aerospacePath .. " focus " .. direction, true)
-            return
+            hs.execute(self.aerospacePath .. " focus " .. direction)
+        else
+            -- Mega-arrow: move or cycle size
+            local binDir = self.aerospacePath:gsub("/[^/]+$", "")
+            local scriptPath = os.getenv("HOME") .. "/.config/bin/aerospace-move-or-cycle-size"
+            hs.execute("PATH=" .. binDir .. ":/usr/bin:/bin " .. scriptPath .. " " .. direction)
         end
-        -- Mega-arrow: move or cycle size
-        local scriptPath = self.aerospacePath:gsub("/aerospace$", "") .. "/aerospace-move-or-cycle-size"
-        -- Check if script exists, fall back to default aerospace bin location
-        local testScript = io.open(scriptPath, "r")
-        if not testScript then
-            scriptPath = os.getenv("HOME") .. "/.config/bin/aerospace-move-or-cycle-size"
-            testScript = io.open(scriptPath, "r")
-        end
-        if testScript then
-            testScript:close()
-            hs.execute(scriptPath .. " " .. direction, true)
-            return
-        end
-        -- No script found, fall through to WindowSnap behavior
+        return
     end
     local screen = win:screen():frame()
     local f = win:frame()
