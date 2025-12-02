@@ -76,10 +76,9 @@ local function isAerospaceTiled(self, hsWindowId)
         return cache.isTiled
     end
 
-    -- Cache miss - check if tiled (single piped command)
-    local cmd = self.aerospacePath .. " list-windows --focused --format '%{window-id}' 2>/dev/null | xargs -I{} " .. self.aerospacePath .. " debug-windows --window-id {} 2>/dev/null | grep -q TilingContainer"
-    local _, isTiled = hs.execute(cmd)
-    isTiled = isTiled == true
+    -- Cache miss - check window layout (stable API)
+    local output = hs.execute(self.aerospacePath .. " list-windows --focused --format '%{window-layout}' 2>/dev/null")
+    local isTiled = output and output:match("tiling") ~= nil
 
     -- Update cache
     self._tiledCache = {windowId = hsWindowId, isTiled = isTiled, timestamp = hs.timer.absoluteTime()}
