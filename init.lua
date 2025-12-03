@@ -80,7 +80,7 @@ local function isAerospaceTiled(self, hsWindowId)
 
     -- Cache miss - check window layout (stable API)
     local output = hs.execute(self.aerospacePath .. " list-windows --focused --format '%{window-layout}' 2>/dev/null")
-    local isTiled = output and output:match("tiling") ~= nil
+    local isTiled = output and output:match("tiles") ~= nil
 
     -- Update cache
     self._tiledCache = {windowId = hsWindowId, isTiled = isTiled, timestamp = hs.timer.absoluteTime()}
