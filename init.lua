@@ -46,7 +46,7 @@ obj._tiledCache = {windowId = nil, isTiled = false, timestamp = 0}
 obj._tiledCacheTTL = math.huge  -- external integration must invalidate on layout changes
 
 -- Tiling sizes for cycling
-local cycleSizes = { 0.5, 1/3, 2/3 }
+local cycleSizes = { 0.5, 2/3, 1/3 }
 
 -- Helper: Get complement size (1/3 <-> 2/3, 1/2 <-> 1/2)
 local function getComplementSize(ratio)
