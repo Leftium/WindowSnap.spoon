@@ -1,107 +1,48 @@
-# WindowSnap.spoon - AI Agent Guidelines
+# WindowSnap.spoon - Agent Guidelines
 
-This document provides context for AI coding assistants working on WindowSnap.
+WindowSnap is a Hammerspoon Spoon. Read `README.md` for setup and controls; check `init.lua` before changing behavior or documenting it.
 
-## Overview
+## Movement model
 
-WindowSnap is a Hammerspoon Spoon that provides Windows Snap-style window management with slot-based positioning and size cycling.
+Both axes use the same rules and preserve the other axis:
 
-## Architecture
+- Unshifted, before the requested edge: snap to that edge with the complementary fraction (1/3 <-> 2/3, 1/2 stays 1/2, other sizes default to 1/2).
+- Unshifted, at the requested edge: advance the remembered cycle index through 1/2, 1/3, and 2/3.
+- Shifted, before the requested edge: preserve both dimensions. Move one slot for evenly tiling fractions, or directly to the edge otherwise.
+- Shifted, at the requested edge: expand any non-full movement-axis size to full; full returns to half.
 
-### Core Concepts
+Mega means unshifted direction and Giga means Shift + direction in the author's dotfiles. Slot movement belongs to Giga. Neither mode resets the other axis.
 
-1. **Slots**: Screen positions where windows can snap. Tiling sizes (1/2, 1/3) divide the screen into multiple slots; non-tiling sizes (2/3) only snap to edges.
+## Implementation details
 
-2. **Tiling vs Non-Tiling Sizes**:
-   - **Tiling**: Sizes like 1/2, 1/3 that divide evenly into the screen (multiple slots)
-   - **Non-Tiling**: Sizes like 2/3 that don't tile evenly (only left/right or top/bottom edges)
-   - Detection: `tilesEvenly = math.abs(ratio - 1/math.floor(1/ratio + 0.5)) < 0.01`
+`init.lua` owns movement, configuration, AeroSpace detection, and hotkey binding.
 
-3. **Edge Detection**: For non-tiling sizes, we detect edges by pixel position (within 10px tolerance) rather than slot calculation.
+- `cycleSizes` is local, not a public setting. `_windowState[winId]` stores independent width and height indices. New state starts at index 1; edge cycling increments before choosing a size, so its first result is 1/3. Manual resizing does not synchronize state.
+- Edge detection runs before slot movement on both axes, with a 10-pixel tolerance. Size matching uses a ratio tolerance of 0.01.
+- Shifted slot movement uses `math.abs(ratio - 1/math.floor(1/ratio + 0.5)) < 0.01` to recognize evenly tiling fractions. A 2/3-size window moves directly to the requested edge.
+- `bindHotkeys()` registers the supplied mapping and adds Shift variants. `move()` reads Shift at runtime, including when called directly.
+- `resetState()` clears cycling state only.
 
-4. **State Tracking**: `_windowState[winId]` tracks `widthIndex` and `heightIndex` into the `sizes` array.
+Keep horizontal and vertical branches consistent. Remove obsolete descriptions when changing behavior; do not restore the former height-reset or unshifted-slot model.
 
-### Movement Logic
+## AeroSpace boundary
 
-Both horizontal (left/right) and vertical (up/down) follow the same pattern:
+Standalone snapping needs no AeroSpace. Set `aerospacePath = nil` when using TrellisWM or another setup without the external helpers.
 
-```
-if tiling and can move between slots:
-    move to adjacent slot
-elseif at edge:
-    cycle size, stay at edge
-else:
-    move to edge
-```
+With integration enabled, detection first checks for the running AeroSpace app. Tiled windows delegate: unshifted commands invoke the external `~/.config/bin/aerospace-move-or-cycle-size`; shifted commands invoke `aerospace focus`. The helper is not shipped in this repo. A failed layout query is treated as non-tiled; delegated failures have no movement fallback.
 
-### Shift Modifier Behavior
+`_tiledCache` holds the most recently queried window's layout with an infinite TTL. No cache invalidation hook is provided here. External integrations must clear it after layout changes, or reload Hammerspoon. Do not describe `resetState()` as clearing this cache.
 
-- **Left/Right + Shift**: Preserves height (doesn't reset to 100%)
-- **Up/Down + Shift**: Same as without Shift (both preserve width)
+## Documentation and verification
 
-## Common Issues & Fixes
+Keep `README.md`, source docstrings, and generated `docs.json` consistent. Generate API docs from the corrected source where tooling is available; do not edit executable Lua for a documentation-only change.
 
-### Issue: Non-tiling sizes have incorrect slot behavior
+After behavior changes, reload Hammerspoon and check:
 
-**Symptom**: Window at 2/3 width tries to move to a "middle slot" that doesn't exist.
+1. Unshifted complementary snaps in all four directions, including an arbitrary starting size.
+2. Unshifted edge cycling, including newly tracked windows and manual resizing.
+3. Shifted slot movement at 1/2 and 1/3, edge movement at 2/3, and full/half toggles at each edge.
+4. Preservation of the other axis in both modes.
+5. Standalone snapping with AeroSpace disabled; delegation and cache invalidation separately if that integration is available.
 
-**Cause**: Missing `tilesEvenly` check - code assumes all sizes have multiple slots.
-
-**Fix**: Add `tilesEvenly` check and only allow slot movement for tiling sizes. Use edge detection for non-tiling sizes.
-
-### Issue: Shift + move at non-tiling size causes unexpected resize
-
-**Symptom**: Pressing Shift + Left at 2/3 width resizes to 1/2 instead of preserving size.
-
-**Cause**: Edge detection fails because non-tiling sizes can be at edges without `currentSlot` being at min/max.
-
-**Fix**: Use pixel-based edge detection (`atLeftEdge`, `atRightEdge`, etc.) instead of relying solely on slot position.
-
-### Issue: Shift hotkeys don't work
-
-**Symptom**: Holding Shift while pressing the hotkey does nothing.
-
-**Cause**: Hammerspoon treats Shift as a modifier, so `ctrl+alt+left` and `ctrl+alt+shift+left` are different hotkeys.
-
-**Fix**: `bindHotkeys()` automatically registers both normal and Shift variants, both calling the same `move()` function which checks Shift state at runtime via `hs.eventtap.checkKeyboardModifiers().shift`.
-
-## Code Structure
-
-```
-init.lua
-├── Metadata (name, version, etc.)
-├── Configuration (sizes, aerospacePath)
-├── Private state (_windowState)
-├── isAerospaceTiled() - AeroSpace integration
-├── move(direction) - Main movement logic
-│   ├── Horizontal (left/right) branch
-│   │   ├── tilesEvenly check
-│   │   ├── Edge detection (atLeftEdge, atRightEdge)
-│   │   ├── Slot movement or edge cycling
-│   │   └── Height reset (unless Shift)
-│   └── Vertical (up/down) branch
-│       ├── tilesEvenly check
-│       ├── Edge detection (atTopEdge, atBottomEdge)
-│       ├── Slot movement or edge cycling
-│       └── Width preservation
-├── resetState(winId) - Clear window state
-└── bindHotkeys(mapping) - Hotkey registration
-```
-
-## Testing
-
-After changes, reload Hammerspoon config and test:
-
-1. **Tiling sizes (1/2, 1/3)**: Should move between slots, cycle at edges
-2. **Non-tiling sizes (2/3)**: Should only snap to edges, cycle at edges
-3. **Shift + Left/Right**: Should preserve height
-4. **Shift + Up/Down**: Should behave same as without Shift
-5. **AeroSpace integration**: Should ignore tiled windows
-
-## Symmetry Principle
-
-The horizontal and vertical logic should be symmetrical. When fixing issues in one, check if the same fix is needed in the other:
-
-- Both need `tilesEvenly` check
-- Both need edge detection for non-tiling sizes
-- Both use `-1` as a flag for "snap to far edge" (right/bottom)
+Report live checks separately from source inspection. Do not imply keyboard delivery or TrellisWM workspace behavior was tested by a source-only check.

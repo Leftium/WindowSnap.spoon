@@ -7,7 +7,7 @@
 ---  * Unshifted at edge: Cycle 1/2 -> 1/3 -> 2/3
 ---  * Shifted: Move between slots (for tiling sizes 1/2, 1/3), preserving size
 ---  * Shifted at edge: Toggle 100% <-> 50%
----  * AeroSpace integration: ignores tiled windows
+---  * Optional AeroSpace integration: delegates tiled windows to external commands
 ---
 --- Quick start:
 ---   hs.loadSpoon("WindowSnap")
@@ -33,7 +33,9 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- WindowSnap.aerospacePath
 --- Variable
 --- Path to aerospace binary. Default: "/opt/homebrew/bin/aerospace"
---- Set to nil to disable AeroSpace integration.
+--- Set to nil for standalone snapping, including with TrellisWM.
+--- Tiled-window delegation requires external helpers; see README.md.
+--- Layout detection is cached without expiry and needs external invalidation.
 obj.aerospacePath = "/opt/homebrew/bin/aerospace"
 
 -- Private: Per-window state
@@ -41,7 +43,7 @@ obj._windowState = {}
 
 -- Private: Cache for tiled status {windowId, isTiled, timestamp}
 obj._tiledCache = {windowId = nil, isTiled = false, timestamp = 0}
-obj._tiledCacheTTL = math.huge  -- infinite (cache cleared by AeroSpace on float toggle)
+obj._tiledCacheTTL = math.huge  -- external integration must invalidate on layout changes
 
 -- Tiling sizes for cycling
 local cycleSizes = { 0.5, 1/3, 2/3 }
@@ -91,12 +93,16 @@ end
 ---
 --- Unshifted behavior:
 ---  * Not at target edge: Snap to target edge with complement size, preserve other axis
----  * At target edge: Toggle 100% <-> 50%
+---  * At target edge: Advance the remembered size cycle through 1/2, 1/3, and 2/3
 ---
 --- Shifted behavior:
 ---  * Tiling size (1/2, 1/3): Move between slots, preserve size
----  * At target edge: Cycle 1/2 -> 1/3 -> 2/3
+---  * At target edge: Expand to 100%, or return to 50% if already full
 ---  * Non-tiling size: Move to target edge, preserve size
+---
+--- Both modes preserve the other axis. Edge cycling uses remembered state, not
+--- the measured size; a newly tracked window at the requested edge cycles to 1/3.
+--- With AeroSpace enabled, tiled windows delegate instead of following these rules.
 ---
 --- Parameters:
 ---  * direction - "left", "right", "up", or "down"
@@ -284,6 +290,7 @@ end
 --- WindowSnap:resetState(winId)
 --- Method
 --- Reset the cycling state for a specific window (or all windows if nil).
+--- Does not clear the AeroSpace layout cache.
 ---
 --- Parameters:
 ---  * winId - window ID to reset, or nil to reset all
@@ -317,7 +324,8 @@ end
 ---  * Unshifted at edge: Cycle 1/2 -> 1/3 -> 2/3
 ---  * Shifted: Move between slots (for tiling sizes), preserving size
 ---  * Shifted at edge: Toggle 100% <-> 50%
----  * If AeroSpace is running and window is tiled, hotkeys do nothing
+---  * With AeroSpace enabled and running, tiled windows delegate to external commands
+---  * Normal commands require ~/.config/bin/aerospace-move-or-cycle-size; Shift invokes aerospace focus
 ---
 --- Example:
 ---  ```lua

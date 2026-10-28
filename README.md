@@ -1,112 +1,72 @@
 # WindowSnap.spoon
 
-Windows Snap-style window management for [Hammerspoon](https://www.hammerspoon.org/) with size cycling.
+Window snapping and size cycling for [Hammerspoon](https://www.hammerspoon.org/). Use arrows to snap with a complementary size, or hold Shift to move without resizing until you reach an edge.
 
-## Features
+Works on its own, including alongside TrellisWM. AeroSpace integration is optional.
 
-- **Slot-based movement**: Left/right moves between slots, cycles width at edges
-- **Size cycling**: Tiling sizes (1/2, 1/3) have multiple slots; non-tiling (2/3) snaps to edges
-- **Height behavior**: Left/right resets height to 100%; up/down preserves width
-- **Shift modifier**: Hold Shift to preserve height on left/right
-- **AeroSpace integration**: Automatically detects floating vs tiled windows, ignores tiled windows
-- **Simple API**: Just 4 hotkeys (left/right/up/down), Shift variants auto-bound
+## Install and configure
 
-## Installation
+Install Hammerspoon, then clone the Spoon:
 
-### Manual
-
-```bash
+```sh
+mkdir -p ~/.hammerspoon/Spoons
 git clone https://github.com/leftium/WindowSnap.spoon ~/.hammerspoon/Spoons/WindowSnap.spoon
 ```
 
-### Download
-
-Download the [latest release](https://github.com/leftium/WindowSnap.spoon/releases), unzip, and double-click `WindowSnap.spoon` to install.
-
-## Usage
-
-### Quick Start
+Add this to `~/.hammerspoon/init.lua`:
 
 ```lua
 hs.loadSpoon("WindowSnap")
+spoon.WindowSnap.aerospacePath = nil -- Use WindowSnap directly, including with TrellisWM
 spoon.WindowSnap:bindHotkeys({
-    left  = {{"ctrl", "alt"}, "left"},
-    right = {{"ctrl", "alt"}, "right"},
-    up    = {{"ctrl", "alt"}, "up"},
-    down  = {{"ctrl", "alt"}, "down"},
+    left  = {{"ctrl", "alt", "cmd"}, "left"},
+    right = {{"ctrl", "alt", "cmd"}, "right"},
+    up    = {{"ctrl", "alt", "cmd"}, "up"},
+    down  = {{"ctrl", "alt", "cmd"}, "down"},
 })
 ```
 
-**Usage:**
-- **Left/Right**: Move between slots (left/middle/right for 1/3 width), cycle width at edges, reset height to 100%
-- **Up/Down**: Move between slots, cycle height at edges, preserve width
-- Hold **Shift** to preserve height on left/right movement
+Reload Hammerspoon's configuration and grant Accessibility access when prompted. Shift variants are bound automatically. You can change the modifiers or use `h`, `j`, `k`, and `l` instead of arrows.
 
-### Vim-Style Keys
+## Controls
 
-```lua
-spoon.WindowSnap:bindHotkeys({
-    left  = {{"ctrl", "alt"}, "h"},
-    right = {{"ctrl", "alt"}, "l"},
-    up    = {{"ctrl", "alt"}, "k"},
-    down  = {{"ctrl", "alt"}, "j"},
-})
-```
+The example uses Ctrl+Alt+Cmd, called Mega in the author's dotfiles. Adding Shift gives Giga. Both modes preserve the other axis: horizontal commands keep height and vertical position; vertical commands keep width and horizontal position.
 
-### Manual Control
+| Control | Before the requested edge | Already at the requested edge |
+| --- | --- | --- |
+| Mega: direction | Snap to that edge with complementary size | Cycle size through 1/2, 1/3, and 2/3 using remembered state |
+| Giga: Shift + direction | Move one slot at evenly tiling sizes such as 1/3 or 1/2; otherwise move to the edge, keeping size | Toggle the movement-axis size between full and half |
 
-```lua
-spoon.WindowSnap:move("left")   -- Snap left
-spoon.WindowSnap:move("right")  -- Snap right
-```
+Complementary snapping swaps 1/3 and 2/3. Half stays half; other sizes snap to half.
 
-## AeroSpace Integration
+For a window in the left third, Giga+Right moves it to the middle third without resizing. Mega+Right snaps it to the right edge at 2/3 width. Another Mega+Right cycles it to half width. The same rules apply vertically.
 
-WindowSnap automatically detects if [AeroSpace](https://github.com/nikitabobko/AeroSpace) is running:
-
-- **Floating windows**: WindowSnap handles directly
-- **Tiled windows**: WindowSnap does nothing (lets AeroSpace handle via its own bindings)
-
-To disable AeroSpace integration:
-
-```lua
-spoon.WindowSnap.aerospacePath = nil
-```
-
-To use a custom AeroSpace path:
-
-```lua
-spoon.WindowSnap.aerospacePath = "/usr/local/bin/aerospace"
-```
+Cycling remembers an index per window and axis; it does not infer the next size from the current frame. A newly tracked window already at the requested edge first cycles to 1/3. Manual resizing does not update that index. At an edge, Giga expands any non-full size to full; the next press returns it to half.
 
 ## API
 
-### Variables
+| Interface | Behavior |
+| --- | --- |
+| `bindHotkeys(mapping)` | Bind directional hotkeys and their Shift variants; returns the Spoon |
+| `move(direction)` | Act on the focused window; accepts `"left"`, `"right"`, `"up"`, or `"down"` and reads the current Shift state |
+| `resetState(winId)` | Clear one window's cycling state, or all cycling state if omitted; returns the Spoon |
+| `aerospacePath` | AeroSpace executable path; defaults to `"/opt/homebrew/bin/aerospace"`. Set to `nil` to disable integration |
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `sizes` | `{0.5, 1/3, 2/3}` | Size ratios to cycle through |
-| `aerospacePath` | `"/opt/homebrew/bin/aerospace"` | Path to aerospace binary, or nil to disable |
+The size cycle is fixed in the implementation. There is no public `sizes` setting. `resetState()` does not clear the AeroSpace layout cache.
 
-### Methods
+## Optional AeroSpace integration
 
-| Method | Description |
-|--------|-------------|
-| `bindHotkeys(mapping)` | Bind hotkeys for left/right/up/down (auto-binds Shift variants) |
-| `move(direction)` | Move window between slots, cycle size at edges |
-| `resetState(winId)` | Reset cycling state for window (or all if nil) |
+To enable integration, omit the `aerospacePath = nil` line above, or set the path to your AeroSpace executable. When AeroSpace is running and reports the focused window as tiled:
 
-### Hotkey Actions
+- Mega invokes `~/.config/bin/aerospace-move-or-cycle-size` asynchronously.
+- Giga invokes `aerospace focus` in the requested direction.
 
-| Action | Description |
-|--------|-------------|
-| `left`, `right` | Move between slots, cycle width at edge, reset height (Shift preserves) |
-| `up`, `down` | Move between slots, cycle height at edge, preserve width |
+The helper is external and is not included here. You must supply it for Mega commands on tiled windows. Floating windows use WindowSnap's own movement logic.
+
+Detection checks for the running AeroSpace application before querying its CLI. A failed layout query is treated as non-tiled. Delegated command failures do not fall back to WindowSnap movement.
+
+Layout results are cached for the most recently queried window with no expiry. This Spoon provides no automatic invalidation on float/tile changes; external integration must clear the cache, or you can reload Hammerspoon. Keep integration disabled when using TrellisWM or after removing the helper scripts.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Author
-
-Leftium <john@leftium.com>
+[MIT](LICENSE). By Leftium <john@leftium.com>.
