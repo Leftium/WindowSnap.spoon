@@ -7,7 +7,7 @@ WindowSnap is a Hammerspoon Spoon. Read `README.md` for setup and controls; chec
 Both axes use the same rules and preserve the other axis:
 
 - Unshifted, before the requested edge: snap to that edge with the complementary fraction (1/3 <-> 2/3, 1/2 stays 1/2, other sizes default to 1/2).
-- Unshifted, at the requested edge: advance the remembered cycle index through 1/2, 1/3, and 2/3.
+- Unshifted, at the requested edge: advance the remembered cycle index through 1/2, 2/3, and 1/3.
 - Shifted, before the requested edge: preserve both dimensions. Move one slot for evenly tiling fractions, or directly to the edge otherwise.
 - Shifted, at the requested edge: expand any non-full movement-axis size to full; full returns to half.
 
@@ -17,7 +17,7 @@ Mega means unshifted direction and Giga means Shift + direction in the author's 
 
 `init.lua` owns movement, configuration, AeroSpace detection, and hotkey binding.
 
-- `cycleSizes` is local, not a public setting. `_windowState[winId]` stores independent width and height indices. New state starts at index 1; edge cycling increments before choosing a size, so its first result is 1/3. Manual resizing does not synchronize state.
+- `cycleSizes` is local, not a public setting. `_windowState[winId]` stores independent width and height indices. New state starts at index 1; edge cycling increments before choosing a size, so its first result is 2/3. Manual resizing does not synchronize state.
 - Edge detection runs before slot movement on both axes, with a 10-pixel tolerance. Size matching uses a ratio tolerance of 0.01.
 - Shifted slot movement uses `math.abs(ratio - 1/math.floor(1/ratio + 0.5)) < 0.01` to recognize evenly tiling fractions. A 2/3-size window moves directly to the requested edge.
 - `bindHotkeys()` registers the supplied mapping and adds Shift variants. `move()` reads Shift at runtime, including when called directly.

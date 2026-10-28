@@ -4,7 +4,7 @@
 ---
 --- Features:
 ---  * Unshifted: Snap to edge with complement size (1/3<->2/3, 1/2<->1/2), preserve other axis
----  * Unshifted at edge: Cycle 1/2 -> 1/3 -> 2/3
+---  * Unshifted at edge: Cycle 1/2 -> 2/3 -> 1/3
 ---  * Shifted: Move between slots (for tiling sizes 1/2, 1/3), preserving size
 ---  * Shifted at edge: Toggle 100% <-> 50%
 ---  * Optional AeroSpace integration: delegates tiled windows to external commands
@@ -93,7 +93,7 @@ end
 ---
 --- Unshifted behavior:
 ---  * Not at target edge: Snap to target edge with complement size, preserve other axis
----  * At target edge: Advance the remembered size cycle through 1/2, 1/3, and 2/3
+---  * At target edge: Advance the remembered size cycle through 1/2, 2/3, and 1/3
 ---
 --- Shifted behavior:
 ---  * Tiling size (1/2, 1/3): Move between slots, preserve size
@@ -101,7 +101,7 @@ end
 ---  * Non-tiling size: Move to target edge, preserve size
 ---
 --- Both modes preserve the other axis. Edge cycling uses remembered state, not
---- the measured size; a newly tracked window at the requested edge cycles to 1/3.
+--- the measured size; a newly tracked window at the requested edge cycles to 2/3.
 --- With AeroSpace enabled, tiled windows delegate instead of following these rules.
 ---
 --- Parameters:
@@ -172,7 +172,7 @@ function obj:move(direction)
                     state.widthIndex = 0  -- 0 means 100%
                 end
             else
-                -- Unshifted cycling: 1/2 -> 1/3 -> 2/3 -> 1/2...
+                -- Unshifted cycling: 1/2 -> 2/3 -> 1/3 -> 1/2...
                 state.widthIndex = (state.widthIndex % #cycleSizes) + 1
                 widthRatio = cycleSizes[state.widthIndex]
             end
@@ -238,7 +238,7 @@ function obj:move(direction)
                     state.heightIndex = 0  -- 0 means 100%
                 end
             else
-                -- Unshifted cycling: 1/2 -> 1/3 -> 2/3 -> 1/2...
+                -- Unshifted cycling: 1/2 -> 2/3 -> 1/3 -> 1/2...
                 state.heightIndex = (state.heightIndex % #cycleSizes) + 1
                 heightRatio = cycleSizes[state.heightIndex]
             end
@@ -321,7 +321,7 @@ end
 ---
 --- Notes:
 ---  * Unshifted: Snap to edge with complement size (1/3<->2/3), preserve other axis
----  * Unshifted at edge: Cycle 1/2 -> 1/3 -> 2/3
+---  * Unshifted at edge: Cycle 1/2 -> 2/3 -> 1/3
 ---  * Shifted: Move between slots (for tiling sizes), preserving size
 ---  * Shifted at edge: Toggle 100% <-> 50%
 ---  * With AeroSpace enabled and running, tiled windows delegate to external commands

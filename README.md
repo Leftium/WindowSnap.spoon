@@ -34,14 +34,14 @@ The example uses Ctrl+Alt+Cmd, called Mega in the author's dotfiles. Adding Shif
 
 | Control | Before the requested edge | Already at the requested edge |
 | --- | --- | --- |
-| Mega: direction | Snap to that edge with complementary size | Cycle size through 1/2, 1/3, and 2/3 using remembered state |
+| Mega: direction | Snap to that edge with complementary size | Cycle size through 1/2, 2/3, and 1/3 using remembered state |
 | Giga: Shift + direction | Move one slot at evenly tiling sizes such as 1/3 or 1/2; otherwise move to the edge, keeping size | Toggle the movement-axis size between full and half |
 
 Complementary snapping swaps 1/3 and 2/3. Half stays half; other sizes snap to half.
 
-For a window in the left third, Giga+Right moves it to the middle third without resizing. Mega+Right snaps it to the right edge at 2/3 width. Another Mega+Right cycles it to half width. The same rules apply vertically.
+For a window in the left third, Giga+Right moves it to the middle third without resizing. Mega+Right snaps it to the right edge at 2/3 width. Another Mega+Right cycles it to 1/3 width; the next press returns it to half width. The same rules apply vertically.
 
-Cycling remembers an index per window and axis; it does not infer the next size from the current frame. A newly tracked window already at the requested edge first cycles to 1/3. Manual resizing does not update that index. At an edge, Giga expands any non-full size to full; the next press returns it to half.
+Cycling remembers an index per window and axis; it does not infer the next size from the current frame. A newly tracked window already at the requested edge first cycles to 2/3. Manual resizing does not update that index. At an edge, Giga expands any non-full size to full; the next press returns it to half.
 
 ## API
 
