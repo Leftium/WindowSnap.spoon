@@ -7,7 +7,7 @@ WindowSnap is a Hammerspoon Spoon. Read `README.md` for setup and controls; chec
 Both axes use the same rules and preserve the other axis:
 
 - Unshifted, before the requested edge: snap to that edge with the complementary fraction (1/3 <-> 2/3, 1/2 stays 1/2, other sizes default to 1/2).
-- Unshifted, at the requested edge: advance the remembered cycle index through 1/2, 2/3, and 1/3.
+- Unshifted, at the requested edge: cycle from the measured size. Left/Up use 1/2 -> 2/3 -> 1/3; Right/Down use 1/2 -> 1/3 -> 2/3. Full and unmatched sizes start at half.
 - Shifted, before the requested edge: preserve both dimensions. Move one slot for evenly tiling fractions, or directly to the edge otherwise.
 - Shifted, at the requested edge: expand any non-full movement-axis size to full; full returns to half.
 
@@ -17,11 +17,11 @@ Mega means unshifted direction and Giga means Shift + direction in the author's 
 
 `init.lua` owns movement, configuration, AeroSpace detection, and hotkey binding.
 
-- `cycleSizes` is local, not a public setting. `_windowState[winId]` stores independent width and height indices. New state starts at index 1; edge cycling increments before choosing a size, so its first result is 2/3. Manual resizing does not synchronize state.
+- `cycleSizes` is local, not a public setting. `getNextCycleSize()` matches the measured ratio and steps forward for Left/Up or backward for Right/Down. There is no remembered cycle state; manual resizing takes effect on the next command.
 - Edge detection runs before slot movement on both axes, with a 10-pixel tolerance. Size matching uses a ratio tolerance of 0.01.
 - Shifted slot movement uses `math.abs(ratio - 1/math.floor(1/ratio + 0.5)) < 0.01` to recognize evenly tiling fractions. A 2/3-size window moves directly to the requested edge.
 - `bindHotkeys()` registers the supplied mapping and adds Shift variants. `move()` reads Shift at runtime, including when called directly.
-- `resetState()` clears cycling state only.
+- `resetState()` is a compatibility no-op and returns the Spoon. It does not clear the AeroSpace cache.
 
 Keep horizontal and vertical branches consistent. Remove obsolete descriptions when changing behavior; do not restore the former height-reset or unshifted-slot model.
 
@@ -37,10 +37,12 @@ With integration enabled, detection first checks for the running AeroSpace app. 
 
 Keep `README.md`, source docstrings, and generated `docs.json` consistent. Generate API docs from the corrected source where tooling is available; do not edit executable Lua for a documentation-only change.
 
+Run `lua tests/move.lua` with Lua 5.3+, or `hs -c 'dofile("/absolute/path/to/WindowSnap.spoon/tests/move.lua")'`. The suite mocks frames and modifiers; it does not move desktop windows or test keyboard delivery.
+
 After behavior changes, reload Hammerspoon and check:
 
 1. Unshifted complementary snaps in all four directions, including an arbitrary starting size.
-2. Unshifted edge cycling, including newly tracked windows and manual resizing.
+2. Both unshifted cycle orders, including manual resizing and full or unmatched sizes entering at half.
 3. Shifted slot movement at 1/2 and 1/3, edge movement at 2/3, and full/half toggles at each edge.
 4. Preservation of the other axis in both modes.
 5. Standalone snapping with AeroSpace disabled; delegation and cache invalidation separately if that integration is available.

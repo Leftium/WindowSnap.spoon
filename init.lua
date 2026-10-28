@@ -4,7 +4,7 @@
 ---
 --- Features:
 ---  * Unshifted: Snap to edge with complement size (1/3<->2/3, 1/2<->1/2), preserve other axis
----  * Unshifted at edge: Cycle 1/2 -> 2/3 -> 1/3
+---  * Unshifted at edge: Left/Up cycle 1/2 -> 2/3 -> 1/3; Right/Down reverse
 ---  * Shifted: Move between slots (for tiling sizes 1/2, 1/3), preserving size
 ---  * Shifted at edge: Toggle 100% <-> 50%
 ---  * Optional AeroSpace integration: delegates tiled windows to external commands
@@ -38,9 +38,6 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- Layout detection is cached without expiry and needs external invalidation.
 obj.aerospacePath = "/opt/homebrew/bin/aerospace"
 
--- Private: Per-window state
-obj._windowState = {}
-
 -- Private: Cache for tiled status {windowId, isTiled, timestamp}
 obj._tiledCache = {windowId = nil, isTiled = false, timestamp = 0}
 obj._tiledCacheTTL = math.huge  -- external integration must invalidate on layout changes
@@ -59,11 +56,21 @@ end
 
 -- Helper: Get index in cycleSizes, or 0 if not found
 local function getCycleSizeIndex(ratio)
+    -- Allow pixel rounding when the screen does not divide evenly into thirds.
     local tolerance = 0.01
     for i, size in ipairs(cycleSizes) do
         if math.abs(ratio - size) < tolerance then return i end
     end
     return 0
+end
+
+local function getNextCycleSize(ratio, direction)
+    local index = getCycleSizeIndex(ratio)
+    if index == 0 then return cycleSizes[1] end
+
+    -- Prefer a larger left/top pane and a smaller right/bottom pane from half.
+    local step = (direction == "left" or direction == "up") and 1 or -1
+    return cycleSizes[((index - 1 + step) % #cycleSizes) + 1]
 end
 
 -- Check if AeroSpace is running and focused window is tiled (with caching)
@@ -93,15 +100,15 @@ end
 ---
 --- Unshifted behavior:
 ---  * Not at target edge: Snap to target edge with complement size, preserve other axis
----  * At target edge: Advance the remembered size cycle through 1/2, 2/3, and 1/3
+---  * At target edge: Left/Up cycle 1/2 -> 2/3 -> 1/3; Right/Down cycle 1/2 -> 1/3 -> 2/3
 ---
 --- Shifted behavior:
 ---  * Tiling size (1/2, 1/3): Move between slots, preserve size
 ---  * At target edge: Expand to 100%, or return to 50% if already full
 ---  * Non-tiling size: Move to target edge, preserve size
 ---
---- Both modes preserve the other axis. Edge cycling uses remembered state, not
---- the measured size; a newly tracked window at the requested edge cycles to 2/3.
+--- Both modes preserve the other axis. Edge cycling follows the measured size,
+--- including after manual resizing. Full and unmatched sizes cycle to half.
 --- With AeroSpace enabled, tiled windows delegate instead of following these rules.
 ---
 --- Parameters:
@@ -134,12 +141,6 @@ function obj:move(direction)
     local isHorizontal = (direction == "left" or direction == "right")
     local tolerance = 10
 
-    -- Initialize state for this window
-    if not self._windowState[winId] then
-        self._windowState[winId] = { widthIndex = 1, heightIndex = 1 }
-    end
-    local state = self._windowState[winId]
-
     -- Detect current position and size
     local atLeftEdge = f.x <= screen.x + tolerance
     local atRightEdge = f.x + f.w >= screen.x + screen.w - tolerance
@@ -166,15 +167,11 @@ function obj:move(direction)
                 -- Shifted at edge: toggle 100% <-> 50%
                 if isFullWidth then
                     widthRatio = 0.5
-                    state.widthIndex = 1
                 else
                     widthRatio = 1
-                    state.widthIndex = 0  -- 0 means 100%
                 end
             else
-                -- Unshifted cycling: 1/2 -> 2/3 -> 1/3 -> 1/2...
-                state.widthIndex = (state.widthIndex % #cycleSizes) + 1
-                widthRatio = cycleSizes[state.widthIndex]
+                widthRatio = getNextCycleSize(widthRatio, direction)
             end
             -- Stay at target edge
             f.w = screen.w * widthRatio
@@ -210,7 +207,6 @@ function obj:move(direction)
             else
                 -- Unshifted: Snap with complement width, preserve height
                 local complementWidth = getComplementSize(widthRatio)
-                state.widthIndex = getCycleSizeIndex(complementWidth)
                 f.w = screen.w * complementWidth
                 f.x = (targetEdge == "left") and screen.x or (screen.x + screen.w - f.w)
                 -- Preserve height and y
@@ -232,15 +228,11 @@ function obj:move(direction)
                 -- Shifted at edge: toggle 100% <-> 50%
                 if isFullHeight then
                     heightRatio = 0.5
-                    state.heightIndex = 1
                 else
                     heightRatio = 1
-                    state.heightIndex = 0  -- 0 means 100%
                 end
             else
-                -- Unshifted cycling: 1/2 -> 2/3 -> 1/3 -> 1/2...
-                state.heightIndex = (state.heightIndex % #cycleSizes) + 1
-                heightRatio = cycleSizes[state.heightIndex]
+                heightRatio = getNextCycleSize(heightRatio, direction)
             end
             -- Stay at target edge
             f.h = screen.h * heightRatio
@@ -276,7 +268,6 @@ function obj:move(direction)
             else
                 -- Unshifted: Snap with complement height, preserve width
                 local complementHeight = getComplementSize(heightRatio)
-                state.heightIndex = getCycleSizeIndex(complementHeight)
                 f.h = screen.h * complementHeight
                 f.y = (targetEdge == "top") and screen.y or (screen.y + screen.h - f.h)
                 -- Preserve width and x
@@ -289,20 +280,15 @@ end
 
 --- WindowSnap:resetState(winId)
 --- Method
---- Reset the cycling state for a specific window (or all windows if nil).
+--- Compatibility no-op; cycling now follows the current window frame.
 --- Does not clear the AeroSpace layout cache.
 ---
 --- Parameters:
----  * winId - window ID to reset, or nil to reset all
+---  * winId - ignored; retained for compatibility
 ---
 --- Returns:
 ---  * The WindowSnap object
 function obj:resetState(winId)
-    if winId then
-        self._windowState[winId] = nil
-    else
-        self._windowState = {}
-    end
     return self
 end
 
@@ -321,7 +307,7 @@ end
 ---
 --- Notes:
 ---  * Unshifted: Snap to edge with complement size (1/3<->2/3), preserve other axis
----  * Unshifted at edge: Cycle 1/2 -> 2/3 -> 1/3
+---  * Unshifted at edge: Left/Up cycle 1/2 -> 2/3 -> 1/3; Right/Down reverse
 ---  * Shifted: Move between slots (for tiling sizes), preserving size
 ---  * Shifted at edge: Toggle 100% <-> 50%
 ---  * With AeroSpace enabled and running, tiled windows delegate to external commands

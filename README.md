@@ -34,14 +34,16 @@ The example uses Ctrl+Alt+Cmd, called Mega in the author's dotfiles. Adding Shif
 
 | Control | Before the requested edge | Already at the requested edge |
 | --- | --- | --- |
-| Mega: direction | Snap to that edge with complementary size | Cycle size through 1/2, 2/3, and 1/3 using remembered state |
+| Mega: direction | Snap to that edge with complementary size | Left/Up: 1/2 -> 2/3 -> 1/3; Right/Down: 1/2 -> 1/3 -> 2/3 |
 | Giga: Shift + direction | Move one slot at evenly tiling sizes such as 1/3 or 1/2; otherwise move to the edge, keeping size | Toggle the movement-axis size between full and half |
 
 Complementary snapping swaps 1/3 and 2/3. Half stays half; other sizes snap to half.
 
-For a window in the left third, Giga+Right moves it to the middle third without resizing. Mega+Right snaps it to the right edge at 2/3 width. Another Mega+Right cycles it to 1/3 width; the next press returns it to half width. The same rules apply vertically.
+From two half-width windows, one extra Mega+Left on the left window makes it two-thirds wide; one extra Mega+Right on the right window makes it one-third wide. Up/Down use the same preference for a larger top pane and a smaller bottom pane.
 
-Cycling remembers an index per window and axis; it does not infer the next size from the current frame. A newly tracked window already at the requested edge first cycles to 2/3. Manual resizing does not update that index. At an edge, Giga expands any non-full size to full; the next press returns it to half.
+For a window in the left third, Giga+Right moves it to the middle third without resizing. Mega+Right snaps it to the right edge at 2/3 width. Another Mega+Right cycles it to half width, then to 1/3 width. The same rules apply vertically.
+
+Cycling follows the window's current size, including after manual resizing. Size matching allows a difference of less than one percentage point of screen width or height to accommodate pixel rounding. Full and unmatched sizes start at half. At an edge, Giga expands any non-full size to full; the next press returns it to half.
 
 ## API
 
@@ -49,7 +51,7 @@ Cycling remembers an index per window and axis; it does not infer the next size 
 | --- | --- |
 | `bindHotkeys(mapping)` | Bind directional hotkeys and their Shift variants; returns the Spoon |
 | `move(direction)` | Act on the focused window; accepts `"left"`, `"right"`, `"up"`, or `"down"` and reads the current Shift state |
-| `resetState(winId)` | Clear one window's cycling state, or all cycling state if omitted; returns the Spoon |
+| `resetState(winId)` | Compatibility no-op; cycling uses the current frame. Returns the Spoon |
 | `aerospacePath` | AeroSpace executable path; defaults to `"/opt/homebrew/bin/aerospace"`. Set to `nil` to disable integration |
 
 The size cycle is fixed in the implementation. There is no public `sizes` setting. `resetState()` does not clear the AeroSpace layout cache.
